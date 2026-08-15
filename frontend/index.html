@@ -20,6 +20,7 @@
   .shell { max-width:1120px; margin:auto; padding:0 24px }
   header { position:sticky; top:0; z-index:5; background:#ffffffee; backdrop-filter:blur(14px); border-bottom:1px solid var(--line); box-shadow:0 4px 18px #17458d0a }
   .head { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-top:19px }
+  .head-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end }
   .brand { font-size:26px; font-weight:850; color:var(--blue-dark); letter-spacing:-.8px }
   .brand span { color:var(--blue) }
   .kicker { color:var(--dim); font:11px/1.4 "SFMono-Regular",monospace; letter-spacing:1.2px; text-transform:uppercase }
@@ -52,7 +53,7 @@
   .badge.ok { color:var(--green); border-color:#a8dcc8; background:#effaf6 }
   .badge.wait { color:#9a6500; border-color:#ead29b; background:#fff9e9 }
   .badge.bad { color:var(--red); border-color:#edb8b4; background:#fff4f3 }
-  .btn { border:1px solid var(--line); border-radius:8px; color:var(--text); background:#fff; padding:9px 13px; font-weight:650 }
+  .btn { border:1px solid var(--line); border-radius:8px; color:var(--text); background:#fff; padding:9px 13px; font-weight:650; text-decoration:none }
   .btn:hover { border-color:var(--teal) }
   .btn.primary { background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:0 7px 16px #2563eb30 }
   .btn.primary:hover { background:var(--blue-dark); border-color:var(--blue-dark) }
@@ -130,7 +131,10 @@
   <div class="shell">
     <div class="head">
       <div><div class="brand">Data<span>Master</span></div><div class="kicker">Government integration control layer</div></div>
-      <button class="btn danger" id="reset">Reset demo</button>
+      <div class="head-actions">
+        <a class="btn teal" href="/permit">Permit application</a>
+        <button class="btn danger" id="reset">Reset demo</button>
+      </div>
     </div>
     <nav class="tabs" aria-label="DataMaster console">
       <button class="tab on" data-tab="overview">Overview</button>
