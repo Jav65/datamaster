@@ -1,0 +1,10 @@
+# fastapi and pydantic are pinned exactly: they determine the generated
+# OpenAPI schema, which is committed and CI-verified. Bumping either will
+# legitimately change docs/api/openapi.json — bump deliberately, then run
+# python scripts/gen_openapi.py and commit the result.
+fastapi==0.141.1
+pydantic==2.13.4
+uvicorn>=0.29
+httpx>=0.27
+anthropic>=0.40
+python-dotenv>=1.0

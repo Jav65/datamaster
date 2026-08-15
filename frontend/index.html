@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DataMaster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --surface:#F8FAFC;
+    --line:#E2E8F0;
+    --line-strong:#CBD5E1;
+    --text:#0F172A;
+    --muted:#64748B;
+    --blue:#1D4ED8;
+    --blue-hover:#1E40AF;
+    --blue-soft:#EFF6FF;
+    --blue-border:#BFDBFE;
+    --green:#047857;
+    --green-border:#A7F3D0;
+    --red:#DC2626;
+    --red-border:#FECACA;
+    --r:8px;
+  }
+  *{box-sizing:border-box}
+  input[type=checkbox]{accent-color:var(--blue);width:auto}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px;border:3px solid var(--bg)}
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+  a{color:var(--blue)}
+
+  /* ---------- header ---------- */
+  header{border-bottom:1px solid var(--line);padding:20px 22px 0;background:var(--bg)}
+  .wrap{max-width:880px;margin:0 auto}
+  .masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin:0}
+  h1 span{color:var(--blue)}
+  .headmeta{display:flex;align-items:baseline;gap:16px;font-size:13px;color:var(--muted)}
+  .headmeta a{text-decoration:none;font-weight:500}
+  .headmeta a:hover{text-decoration:underline}
+
+  .tabs{display:flex;gap:24px}
+  .tab{
+    font-family:inherit;font-size:14px;font-weight:500;color:var(--muted);
+    background:none;border:none;border-bottom:2px solid transparent;
+    padding:0 0 10px;margin-bottom:-1px;cursor:pointer;
+  }
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--blue);font-weight:600;border-bottom-color:var(--blue)}
+  .tab:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
+
+  main{max-width:880px;margin:0 auto;padding:24px 22px 72px}
+  .hint{font-size:13px;color:var(--muted)}
+  .sectionbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .sectionbar .hint{flex:1 1 320px}
+  .sectionbar-actions{display:flex;gap:8px;flex-shrink:0}
+  .hint b{color:var(--text);font-weight:600}
+
+  /* ---------- surfaces ---------- */
+  .card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+
+  /* ---------- forms ---------- */
+  input,textarea,select,button{font-family:inherit}
+  input,textarea,select{
+    font-size:13px;color:var(--text);background:var(--bg);
+    border:1px solid var(--line-strong);border-radius:6px;padding:9px 11px;outline:none;
+    font-variant-numeric:tabular-nums;
+  }
+  input::placeholder,textarea::placeholder{color:#94A3B8}
+  input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
+  textarea{resize:vertical;line-height:1.55}
+  .lbl{font-size:12px;font-weight:500;color:var(--muted);margin:12px 0 5px;display:block}
+
+  /* ---------- buttons ---------- */
+  button.primary{
+    font-size:13px;font-weight:600;color:#fff;background:var(--blue);
+    border:1px solid var(--blue);border-radius:6px;padding:9px 18px;cursor:pointer;
+  }
+  button.primary:hover{background:var(--blue-hover);border-color:var(--blue-hover)}
+  button.primary:disabled{background:var(--line-strong);border-color:var(--line-strong);cursor:wait}
+  button.ghost{
+    font-size:12px;font-weight:500;color:var(--blue);background:var(--bg);
+    border:1px solid var(--line-strong);border-radius:6px;padding:6px 12px;cursor:pointer;
+  }
+  button.ghost:hover{border-color:var(--blue);background:var(--blue-soft)}
+  button.danger{
+    font-size:12px;font-weight:500;color:var(--red);background:var(--bg);
+    border:1px solid var(--line-strong);border-radius:6px;padding:6px 12px;cursor:pointer;
+  }
+  button.danger:hover{border-color:var(--red);background:#FEF2F2}
+  button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+  /* ---------- bits ---------- */
+  .tag{
+    font-size:11px;font-weight:500;border-radius:4px;padding:2px 7px;
+    border:1px solid var(--line);color:var(--muted);background:var(--surface);
+    display:inline-block;margin:3px 4px 0 0;
+  }
+  .tag.blue{color:var(--blue);background:var(--blue-soft);border-color:var(--blue-border)}
+  .tag.green{color:var(--green);background:#ECFDF5;border-color:var(--green-border)}
+  .chip{
+    font-size:12px;font-weight:500;color:var(--text);background:var(--bg);
+    border:1px solid var(--line-strong);border-radius:999px;padding:5px 12px;cursor:pointer;
+  }
+  .chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+  pre{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;line-height:1.5;
+    background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    padding:8px 11px;margin:7px 0 0;overflow-x:auto;white-space:pre-wrap;color:var(--text);
+  }
+
+  /* ---------- trace rail ---------- */
+  .rail{display:flex;gap:12px}
+  .dotcol{display:flex;flex-direction:column;align-items:center;width:22px}
+  .dot{width:9px;height:9px;border-radius:999px;margin-top:6px;flex-shrink:0}
+  .stem{width:2px;flex:1;background:var(--line);min-height:14px}
+  .final{background:var(--blue-soft);border:1px solid var(--blue-border);border-radius:var(--r);padding:12px 14px}
+  .final-hd{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:7px}
+
+  /* ---------- dialog ---------- */
+  dialog{
+    background:var(--bg);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 16px 48px rgba(15,23,42,.16);padding:22px;width:min(560px,92vw);color:var(--text);
+  }
+  dialog::backdrop{background:rgba(15,23,42,.4)}
+  .dlg-title{font-size:17px;font-weight:600;color:var(--text)}
+
+  .iogrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:620px){.iogrid{grid-template-columns:1fr}.tabs{gap:18px}}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="masthead">
+    <h1>Data<span>Master</span></h1>
+    <div class="headmeta">
+      <span id="kicker"></span>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-t="play">Playground</button>
+    <button class="tab" data-t="config">Config</button>
+  </div>
+</div></header>
+
+<main>
+  <!-- ============ PLAYGROUND ============ -->
+  <section id="play">
+    <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div class="iogrid">
+      <label><span class="lbl" style="margin-top:0">Input — subject, flexible key names</span>
+        <textarea id="q_input" rows="3" style="width:100%">{name: Budi, no: +62811770909}</textarea>
+      </label>
+      <label><span class="lbl" style="margin-top:0">Output — fields to return</span>
+        <textarea id="q_fields" rows="3" style="width:100%">{bloodType, allergies, lastCheckupDate}</textarea>
+      </label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button class="primary" id="run">Run</button>
+    </div>
+    <div class="card" id="trace" style="margin-top:16px;min-height:180px">
+      <span class="hint">Run a query to see the routing trace.</span>
+    </div>
+  </section>
+
+  <!-- ============ CONFIG ============ -->
+  <section id="config" hidden>
+    <div class="sectionbar">
+      <div class="hint">Each entry becomes a tool. <b>The description is the routing logic</b> — write it for the agent.</div>
+      <div class="sectionbar-actions">
+        <button class="ghost" id="jsonToggle">View config.json</button>
+        <button class="primary" id="addApi">Add API</button>
+      </div>
+    </div>
+    <div id="cfgList"></div>
+    <pre id="cfgJson" hidden style="max-height:420px;overflow:auto"></pre>
+  </section>
+</main>
+
+<!-- ============ EDIT DIALOG ============ -->
+<dialog id="dlg">
+  <div class="dlg-title" id="dlgTitle">Register API</div>
+  <label><span class="lbl">ID (tool name)</span><input id="f_id" style="width:100%"></label>
+  <label><span class="lbl">Endpoint URL</span><input id="f_api" style="width:100%"></label>
+  <label><span class="lbl">Description — tell the agent when to use this</span><textarea id="f_desc" rows="3" style="width:100%"></textarea></label>
+  <label><span class="lbl">Returns</span><input id="f_ret" style="width:100%"></label>
+  <span class="lbl">Parameters</span>
+  <div id="f_params"></div>
+  <button class="ghost" id="addParam" style="border-style:dashed;margin:4px 0 14px">Add parameter</button>
+  <div id="f_err" style="color:var(--red);font-size:13px;margin-bottom:10px"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="ghost" id="dlgCancel" style="color:var(--muted)">Cancel</button>
+    <button class="primary" id="dlgSave">Save</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (s)=>document.querySelector(s);
+const esc = (s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let CONFIG = [];
+let editingIdx = null;
+
+/* ---------- tabs ---------- */
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
+  ["play","config"].forEach(id=>$("#"+id).hidden = id!==b.dataset.t);
+});
+
+/* ---------- config ---------- */
+async function loadConfig(){
+  const r = await fetch("/api/config"); const d = await r.json();
+  CONFIG = d.apis; renderConfig();
+}
+function renderConfig(){
+  $("#kicker").textContent = `${CONFIG.length} registered ${CONFIG.length===1?"agency":"agencies"}`;
+  $("#cfgJson").textContent = JSON.stringify({apis:CONFIG},null,2);
+  $("#cfgList").innerHTML = CONFIG.map((e,i)=>`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="min-width:0">
+          <span class="mono" style="font-size:13px;color:var(--blue);font-weight:600">${esc(e.id)}</span>
+          <span class="mono" style="font-size:12px;color:var(--muted);word-break:break-all"> ${esc(e.api)}</span>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="ghost" onclick="openEdit(${i})">Edit</button>
+          <button class="danger" onclick="delApi(${i})">Delete</button>
+        </div>
+      </div>
+      <div style="font-size:13px;margin:8px 0;color:var(--text)">${esc(e.desc)}</div>
+      <div>${(e.params||[]).map(p=>`<span class="tag blue">${esc(p.name)}: ${esc(p.type)}${p.required?"*":""}</span>`).join("")}
+      ${e.returns?`<span class="tag">→ ${esc(e.returns)}</span>`:""}</div>
+    </div>`).join("");
+}
+async function persistConfig(){
+  const r = await fetch("/api/config",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({apis:CONFIG})});
+  if(!r.ok){ const d=await r.json(); alert("Config rejected: "+d.detail); }
+  loadConfig();
+}
+function delApi(i){ CONFIG.splice(i,1); persistConfig(); }
+$("#jsonToggle").onclick=()=>{
+  const showing = !$("#cfgJson").hidden;
+  $("#cfgJson").hidden = showing; $("#cfgList").hidden = !showing;
+  $("#jsonToggle").textContent = showing ? "View config.json" : "Table view";
+};
+
+/* ---------- edit dialog ---------- */
+function paramRow(p={name:"",type:"string",required:false,desc:""}){
+  const div=document.createElement("div");
+  div.style.cssText="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap";
+  div.innerHTML=`<input class="pn" placeholder="name" style="width:110px;font-size:12px" value="${esc(p.name)}">
+    <select class="pt" style="font-size:12px"><option${p.type!=="number"?" selected":""}>string</option><option${p.type==="number"?" selected":""}>number</option></select>
+    <input class="pd" placeholder="description" style="flex:1;min-width:120px;font-size:12px" value="${esc(p.desc)}">
+    <label style="font-size:12px;color:var(--muted)"><input type="checkbox" class="pr" ${p.required?"checked":""}> req</label>
+    <button class="danger" style="border:none;padding:4px 8px" onclick="this.parentElement.remove()">✕</button>`;
+  return div;
+}
+function openEdit(i){
+  editingIdx = i;
+  const e = i===null ? {id:"",api:"",desc:"",returns:"",params:[{name:"",type:"string",required:true,desc:""}]} : CONFIG[i];
+  $("#dlgTitle").textContent = i===null?"Register API":"Edit API";
+  $("#f_id").value=e.id; $("#f_api").value=e.api; $("#f_desc").value=e.desc; $("#f_ret").value=e.returns||"";
+  $("#f_params").innerHTML=""; (e.params||[]).forEach(p=>$("#f_params").appendChild(paramRow(p)));
+  $("#f_err").textContent="";
+  $("#dlg").showModal();
+}
+$("#addApi").onclick=()=>openEdit(null);
+$("#addParam").onclick=()=>$("#f_params").appendChild(paramRow());
+$("#dlgCancel").onclick=()=>$("#dlg").close();
+$("#dlgSave").onclick=()=>{
+  const entry={
+    id:$("#f_id").value.trim(), api:$("#f_api").value.trim(),
+    method:"GET", desc:$("#f_desc").value.trim(), returns:$("#f_ret").value.trim(),
+    params:[...$("#f_params").children].map(r=>({
+      name:r.querySelector(".pn").value.trim(), type:r.querySelector(".pt").value,
+      required:r.querySelector(".pr").checked, desc:r.querySelector(".pd").value.trim(),
+    })).filter(p=>p.name),
+  };
+  if(!entry.id||!entry.api||!entry.desc){ $("#f_err").textContent="ID, endpoint URL and description are required — the description is what the agent routes on."; return; }
+  if(editingIdx===null && CONFIG.some(c=>c.id===entry.id)){ $("#f_err").textContent="That ID already exists."; return; }
+  if(editingIdx===null) CONFIG.push(entry); else CONFIG[editingIdx]=entry;
+  $("#dlg").close(); persistConfig();
+};
+
+/* ---------- playground (SSE) ---------- */
+const SAMPLES=[
+  {label:"npwp + blood type — John",   input:"{name: John Doe, no: +62838292938}",  fields:"{npwp, npwpLastVerified, bloodType}"},
+  {label:"business check — Siti",      input:"{nama: Siti Rahma, hp: +628117701234}", fields:"{ownsBusiness, companyName, riskLevel}"},
+  {label:"3-hop: masterlist — John",   input:"{name: John Doe, phone: +62838292938}", fields:"{companyName, masterlist, uwtoStatus, plot}"},
+  {label:"health — Budi",              input:"{name: Budi, no: +62811770909}",       fields:"{bloodType, allergies, lastCheckupDate}"},
+];
+$("#chips").innerHTML=SAMPLES.map((s,i)=>`<button class="chip" data-i="${i}">${esc(s.label)}</button>`).join("");
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  const s=SAMPLES[+c.dataset.i]; $("#q_input").value=s.input; $("#q_fields").value=s.fields;
+});
+
+function traceRow(ev, isLast){
+  let dot="var(--line-strong)", body="";
+  if(ev.type==="thinking"){ body=`<div style="font-size:13px;color:var(--muted)">Round ${ev.round+1} — deciding which APIs answer this…</div>`; }
+  if(ev.type==="call"){ dot="var(--blue)";
+    body=`<div style="font-size:13px">→ <b class="mono" style="color:var(--blue)">${esc(ev.tool)}</b></div>
+      <div class="mono" style="font-size:12px;color:var(--muted);word-break:break-all">${esc(ev.api)}</div>
+      <pre>${esc(JSON.stringify(ev.args,null,1))}</pre>`; }
+  if(ev.type==="result"){ dot = ev.status===200?"var(--green)":"var(--red)";
+    body=`<div style="font-size:13px;color:${ev.status===200?"var(--green)":"var(--red)"}">← ${ev.status} · ${ev.ms} ms</div>
+      <pre style="border-color:${ev.status===200?"var(--green-border)":"var(--red-border)"}">${esc(JSON.stringify(ev.body,null,1))}</pre>`; }
+  if(ev.type==="final"){ dot="var(--blue)";
+    const content = ev.json
+      ? `<pre style="border:none;background:transparent;padding:0;font-size:13px">${esc(JSON.stringify(ev.json,null,2))}</pre>`
+      : `<div style="color:var(--red);font-size:13px">Parse error: ${esc(ev.parse_error||"unknown")}</div><pre>${esc(ev.raw||"")}</pre>`;
+    body=`<div class="final"><div class="final-hd">JSON answer</div>${content}</div>`; }
+  if(ev.type==="error"){ dot="var(--red)"; body=`<div style="font-size:13px;color:var(--red)">✕ ${esc(ev.text)}</div>`; }
+  return `<div class="rail"><div class="dotcol"><div class="dot" style="background:${dot}"></div>${isLast?"":'<div class="stem"></div>'}</div>
+    <div style="padding-bottom:16px;flex:1;min-width:0">${body}</div></div>`;
+}
+let EVENTS=[];
+function renderTrace(){ $("#trace").innerHTML = EVENTS.map((e,i)=>traceRow(e,i===EVENTS.length-1)).join(""); }
+$("#run").onclick=()=>{
+  EVENTS=[]; renderTrace(); $("#run").disabled=true; $("#run").textContent="Routing…";
+  const u = "/api/query/stream?input="+encodeURIComponent($("#q_input").value)+"&fields="+encodeURIComponent($("#q_fields").value);
+  const es = new EventSource(u);
+  es.onmessage=(m)=>{ EVENTS.push(JSON.parse(m.data)); renderTrace(); };
+  es.addEventListener("done",()=>{ es.close(); $("#run").disabled=false; $("#run").textContent="Run"; });
+  es.onerror=()=>{ es.close(); $("#run").disabled=false; $("#run").textContent="Run"; };
+};
+
+loadConfig();
+</script>
+</body>
+</html>

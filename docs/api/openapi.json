@@ -1,0 +1,815 @@
+{
+  "components": {
+    "schemas": {
+      "ApiEntry": {
+        "properties": {
+          "api": {
+            "description": "Endpoint URL. May contain ${GOV_API_BASE}, expanded from the environment when the call is made.",
+            "examples": [
+              "${GOV_API_BASE}/dukcapil/getNIK"
+            ],
+            "title": "Api",
+            "type": "string"
+          },
+          "desc": {
+            "description": "The routing logic. The agent reads this to decide when to call.",
+            "title": "Desc",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable identifier; becomes the tool name.",
+            "examples": [
+              "dukcapil_getNIK"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "method": {
+            "default": "GET",
+            "description": "HTTP method.",
+            "title": "Method",
+            "type": "string"
+          },
+          "params": {
+            "items": {
+              "$ref": "#/components/schemas/ApiParam"
+            },
+            "title": "Params",
+            "type": "array"
+          },
+          "returns": {
+            "default": "",
+            "description": "Human-readable summary of the response shape.",
+            "title": "Returns",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "api",
+          "desc"
+        ],
+        "title": "ApiEntry",
+        "type": "object"
+      },
+      "ApiParam": {
+        "properties": {
+          "desc": {
+            "default": "",
+            "description": "Written for the agent, not for a human reader.",
+            "title": "Desc",
+            "type": "string"
+          },
+          "name": {
+            "description": "Query-string parameter name.",
+            "title": "Name",
+            "type": "string"
+          },
+          "required": {
+            "default": false,
+            "description": "Whether the agent must supply it.",
+            "title": "Required",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "string",
+            "description": "'string' or 'number'.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ApiParam",
+        "type": "object"
+      },
+      "ConfigIn": {
+        "properties": {
+          "apis": {
+            "description": "Full registry. Replaces the existing one wholesale.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Apis",
+            "type": "array"
+          }
+        },
+        "required": [
+          "apis"
+        ],
+        "title": "ConfigIn",
+        "type": "object"
+      },
+      "ConfigOut": {
+        "properties": {
+          "apis": {
+            "description": "The registry as stored. `api` values are returned unexpanded, so that a round-trip through PUT does not bake in the current host.",
+            "items": {
+              "$ref": "#/components/schemas/ApiEntry"
+            },
+            "title": "Apis",
+            "type": "array"
+          }
+        },
+        "required": [
+          "apis"
+        ],
+        "title": "ConfigOut",
+        "type": "object"
+      },
+      "ConfigSaved": {
+        "properties": {
+          "count": {
+            "description": "Number of entries saved.",
+            "title": "Count",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "count"
+        ],
+        "title": "ConfigSaved",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "QueryIn": {
+        "properties": {
+          "fields": {
+            "description": "Exact output field names wanted back. Returned verbatim as the keys of `answer`, with no renaming or additions.",
+            "examples": [
+              "{npwp, companyName, bloodType}"
+            ],
+            "title": "Fields",
+            "type": "string"
+          },
+          "input": {
+            "description": "Loosely-formatted object identifying the subject. Key names are arbitrary — 'no', 'hp' and 'telp' are all understood as phone.",
+            "examples": [
+              "{name: John Doe, phone: +62838292938}"
+            ],
+            "title": "Input",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input",
+          "fields"
+        ],
+        "title": "QueryIn",
+        "type": "object"
+      },
+      "QueryOut": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Keys exactly as requested in `fields`. Unavailable values are null, never invented. May carry a `_note` key when something needs explaining.",
+            "examples": [
+              {
+                "companyName": "PT Selat Niaga Makmur",
+                "npwp": "09.254.294.3-217.000"
+              }
+            ],
+            "title": "Answer"
+          },
+          "called_tools": {
+            "description": "Agency APIs actually called, in order. This is the audit trail.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Called Tools",
+            "type": "array"
+          },
+          "parse_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when `raw` could not be parsed as JSON.",
+            "title": "Parse Error"
+          },
+          "raw": {
+            "default": "",
+            "description": "The model's unparsed final message.",
+            "title": "Raw",
+            "type": "string"
+          },
+          "trace": {
+            "description": "Every routing step.",
+            "items": {
+              "$ref": "#/components/schemas/TraceEvent"
+            },
+            "title": "Trace",
+            "type": "array"
+          }
+        },
+        "title": "QueryOut",
+        "type": "object"
+      },
+      "TestCase": {
+        "properties": {
+          "expect": {
+            "description": "Tools that MUST be called.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Expect",
+            "type": "array"
+          },
+          "expect_values": {
+            "additionalProperties": true,
+            "description": "Exact values expected in `answer`.",
+            "title": "Expect Values",
+            "type": "object"
+          },
+          "fields": {
+            "title": "Fields",
+            "type": "string"
+          },
+          "forbid": {
+            "description": "Tools that must NOT be called. This is the data-minimisation check — e.g. a health-only query must not reach the tax API.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Forbid",
+            "type": "array"
+          },
+          "input": {
+            "title": "Input",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "input",
+          "fields"
+        ],
+        "title": "TestCase",
+        "type": "object"
+      },
+      "TestResult": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "called": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Called",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set if the run raised before assertions could be checked.",
+            "title": "Error"
+          },
+          "forbidden": {
+            "default": [],
+            "description": "Forbidden tools that were called anyway.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Forbidden",
+            "type": "array"
+          },
+          "missing": {
+            "default": [],
+            "description": "Expected tools that were not called.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parse_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parse Error"
+          },
+          "pass": {
+            "title": "Pass",
+            "type": "boolean"
+          },
+          "value_problems": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Value Problems",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "pass"
+        ],
+        "title": "TestResult",
+        "type": "object"
+      },
+      "TestSuiteIn": {
+        "properties": {
+          "tests": {
+            "items": {
+              "$ref": "#/components/schemas/TestCase"
+            },
+            "title": "Tests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tests"
+        ],
+        "title": "TestSuiteIn",
+        "type": "object"
+      },
+      "TestSuiteOut": {
+        "properties": {
+          "passed": {
+            "title": "Passed",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/TestResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "results",
+          "passed",
+          "total"
+        ],
+        "title": "TestSuiteOut",
+        "type": "object"
+      },
+      "TraceEvent": {
+        "properties": {
+          "args": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Arguments sent, on call events.",
+            "title": "Args"
+          },
+          "ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Round-trip time in milliseconds, on result events.",
+            "title": "Ms"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "HTTP status, on result events. 599 means the request never completed.",
+            "title": "Status"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Present on thinking, final and error events.",
+            "title": "Text"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tool id, on call and result events.",
+            "title": "Tool"
+          },
+          "type": {
+            "description": "One of: thinking, call, result, final, error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "TraceEvent",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Config-driven government data broker. Send a loosely-identified subject and a list of wanted fields; the agent decides which agency APIs to call, in what order, and returns exactly those field names.\n\nSee docs/MIDDLEWARE.md for integration patterns.",
+    "license": {
+      "identifier": "MIT",
+      "name": "MIT"
+    },
+    "title": "DataMaster",
+    "version": "1.0.0",
+    "x-generated-by": "GENERATED FILE — do not edit by hand. Produced by scripts/gen_openapi.py from the route definitions in app/main.py."
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Serves the playground and config editor.",
+        "operationId": "index__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "frontend/index.html is missing from the checkout."
+          }
+        },
+        "summary": "Console",
+        "tags": [
+          "UI"
+        ]
+      }
+    },
+    "/api/config": {
+      "get": {
+        "description": "Returns entries exactly as stored, with ${GOV_API_BASE} unexpanded.",
+        "operationId": "get_config_api_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "config.json on disk is malformed or fails validation."
+          }
+        },
+        "summary": "Read the agency registry",
+        "tags": [
+          "Config"
+        ]
+      },
+      "put": {
+        "description": "Validates every entry before writing. Rejects the whole payload on any failure. Takes effect on the next query — no restart.",
+        "operationId": "put_config_api_config_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigSaved"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace the agency registry",
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/query": {
+      "post": {
+        "description": "Runs the full routing loop and returns once the agent produces an answer. Use the SSE endpoint if you want live progress.",
+        "operationId": "post_query_api_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run a query (blocking)",
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/api/query/stream": {
+      "get": {
+        "description": "Same semantics as POST /api/query, but each routing step arrives as an event. Event types: thinking, call, result, final, error. Terminates with an event named `done`.",
+        "operationId": "stream_query_api_query_stream_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "input",
+            "required": true,
+            "schema": {
+              "title": "Input",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "fields",
+            "required": true,
+            "schema": {
+              "title": "Fields",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run a query (Server-Sent Events)",
+        "tags": [
+          "Query"
+        ]
+      }
+    },
+    "/api/tests/run": {
+      "post": {
+        "description": "Each case may require tools (`expect`), forbid tools (`forbid`), and assert exact values. Routing is non-deterministic, so this measures it rather than proving it.",
+        "operationId": "run_tests_api_tests_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSuiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestSuiteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run an assertion suite",
+        "tags": [
+          "Tests"
+        ]
+      }
+    },
+    "/permit": {
+      "get": {
+        "description": "The form lives in the batam-permit repo. 404s if PERMIT_URL is unset.",
+        "operationId": "permit_page_permit_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "307": {
+            "description": "Redirect to PERMIT_URL."
+          },
+          "404": {
+            "description": "PERMIT_URL is not configured in .env."
+          }
+        },
+        "summary": "Redirect to the permit form",
+        "tags": [
+          "UI"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Wherever this service is running (see .env)",
+      "url": "/"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Run the routing agent.",
+      "name": "Query"
+    },
+    {
+      "description": "Read and replace the agency registry.",
+      "name": "Config"
+    },
+    {
+      "description": "Assert routing behaviour, including data minimisation.",
+      "name": "Tests"
+    },
+    {
+      "description": "Static pages and redirects.",
+      "name": "UI"
+    }
+  ]
+}

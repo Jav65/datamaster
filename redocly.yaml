@@ -1,0 +1,12 @@
+# Redocly lint configuration.
+
+extends:
+  - recommended
+
+rules:
+  # KNOWN GAP, not a design decision. /api/query brokers citizen PII — blood
+  # type, tax IDs, medical notes — over an unauthenticated endpoint. That is
+  # acceptable for a localhost demo and is not acceptable anywhere else.
+  # Before this is exposed beyond localhost, add an auth scheme and turn this
+  # rule back on so the spec is forced to declare it.
+  security-defined: off
