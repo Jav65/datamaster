@@ -1,93 +1,9 @@
 {
   "components": {
     "schemas": {
-      "ApiEntry": {
-        "properties": {
-          "api": {
-            "description": "Endpoint URL. May contain ${GOV_API_BASE}, expanded from the environment when the call is made.",
-            "examples": [
-              "${GOV_API_BASE}/dukcapil/getNIK"
-            ],
-            "title": "Api",
-            "type": "string"
-          },
-          "desc": {
-            "description": "The routing logic. The agent reads this to decide when to call.",
-            "title": "Desc",
-            "type": "string"
-          },
-          "id": {
-            "description": "Stable identifier; becomes the tool name.",
-            "examples": [
-              "dukcapil_getNIK"
-            ],
-            "title": "Id",
-            "type": "string"
-          },
-          "method": {
-            "default": "GET",
-            "description": "HTTP method.",
-            "title": "Method",
-            "type": "string"
-          },
-          "params": {
-            "items": {
-              "$ref": "#/components/schemas/ApiParam"
-            },
-            "title": "Params",
-            "type": "array"
-          },
-          "returns": {
-            "default": "",
-            "description": "Human-readable summary of the response shape.",
-            "title": "Returns",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "api",
-          "desc"
-        ],
-        "title": "ApiEntry",
-        "type": "object"
-      },
-      "ApiParam": {
-        "properties": {
-          "desc": {
-            "default": "",
-            "description": "Written for the agent, not for a human reader.",
-            "title": "Desc",
-            "type": "string"
-          },
-          "name": {
-            "description": "Query-string parameter name.",
-            "title": "Name",
-            "type": "string"
-          },
-          "required": {
-            "default": false,
-            "description": "Whether the agent must supply it.",
-            "title": "Required",
-            "type": "boolean"
-          },
-          "type": {
-            "default": "string",
-            "description": "'string' or 'number'.",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "title": "ApiParam",
-        "type": "object"
-      },
       "ConfigIn": {
         "properties": {
           "apis": {
-            "description": "Full registry. Replaces the existing one wholesale.",
             "items": {
               "additionalProperties": true,
               "type": "object"
@@ -100,42 +16,6 @@
           "apis"
         ],
         "title": "ConfigIn",
-        "type": "object"
-      },
-      "ConfigOut": {
-        "properties": {
-          "apis": {
-            "description": "The registry as stored. `api` values are returned unexpanded, so that a round-trip through PUT does not bake in the current host.",
-            "items": {
-              "$ref": "#/components/schemas/ApiEntry"
-            },
-            "title": "Apis",
-            "type": "array"
-          }
-        },
-        "required": [
-          "apis"
-        ],
-        "title": "ConfigOut",
-        "type": "object"
-      },
-      "ConfigSaved": {
-        "properties": {
-          "count": {
-            "description": "Number of entries saved.",
-            "title": "Count",
-            "type": "integer"
-          },
-          "ok": {
-            "title": "Ok",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "ok",
-          "count"
-        ],
-        "title": "ConfigSaved",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -151,21 +31,44 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "LegacyQueryIn": {
+        "properties": {
+          "nib": {
+            "title": "Nib",
+            "type": "string"
+          }
+        },
+        "required": [
+          "nib"
+        ],
+        "title": "LegacyQueryIn",
+        "type": "object"
+      },
+      "MappingEditIn": {
+        "properties": {
+          "concept": {
+            "title": "Concept",
+            "type": "string"
+          },
+          "new_field": {
+            "title": "New Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "concept",
+          "new_field"
+        ],
+        "title": "MappingEditIn",
+        "type": "object"
+      },
       "QueryIn": {
         "properties": {
           "fields": {
-            "description": "Exact output field names wanted back. Returned verbatim as the keys of `answer`, with no renaming or additions.",
-            "examples": [
-              "{npwp, companyName, bloodType}"
-            ],
             "title": "Fields",
             "type": "string"
           },
           "input": {
-            "description": "Loosely-formatted object identifying the subject. Key names are arbitrary — 'no', 'hp' and 'telp' are all understood as phone.",
-            "examples": [
-              "{name: John Doe, phone: +62838292938}"
-            ],
             "title": "Input",
             "type": "string"
           }
@@ -177,69 +80,79 @@
         "title": "QueryIn",
         "type": "object"
       },
-      "QueryOut": {
+      "RepositoryConnectIn": {
         "properties": {
-          "answer": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Keys exactly as requested in `fields`. Unavailable values are null, never invented. May carry a `_note` key when something needs explaining.",
-            "examples": [
-              {
-                "companyName": "PT Selat Niaga Makmur",
-                "npwp": "09.254.294.3-217.000"
-              }
-            ],
-            "title": "Answer"
-          },
-          "called_tools": {
-            "description": "Agency APIs actually called, in order. This is the audit trail.",
+          "repository_url": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Repository Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository_url"
+        ],
+        "title": "RepositoryConnectIn",
+        "type": "object"
+      },
+      "ResetIn": {
+        "properties": {
+          "actor": {
+            "default": "demo_operator",
+            "maxLength": 100,
+            "title": "Actor",
+            "type": "string"
+          }
+        },
+        "title": "ResetIn",
+        "type": "object"
+      },
+      "ResolveIn": {
+        "properties": {
+          "fields": {
             "items": {
               "type": "string"
             },
-            "title": "Called Tools",
+            "title": "Fields",
             "type": "array"
           },
-          "parse_error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Set when `raw` could not be parsed as JSON.",
-            "title": "Parse Error"
-          },
-          "raw": {
-            "default": "",
-            "description": "The model's unparsed final message.",
-            "title": "Raw",
+          "purpose": {
+            "title": "Purpose",
             "type": "string"
           },
-          "trace": {
-            "description": "Every routing step.",
-            "items": {
-              "$ref": "#/components/schemas/TraceEvent"
-            },
-            "title": "Trace",
-            "type": "array"
+          "subject": {
+            "$ref": "#/components/schemas/SubjectIn"
           }
         },
-        "title": "QueryOut",
+        "required": [
+          "subject",
+          "fields",
+          "purpose"
+        ],
+        "title": "ResolveIn",
+        "type": "object"
+      },
+      "SubjectIn": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ],
+        "title": "SubjectIn",
         "type": "object"
       },
       "TestCase": {
         "properties": {
           "expect": {
-            "description": "Tools that MUST be called.",
             "items": {
               "type": "string"
             },
@@ -248,7 +161,6 @@
           },
           "expect_values": {
             "additionalProperties": true,
-            "description": "Exact values expected in `answer`.",
             "title": "Expect Values",
             "type": "object"
           },
@@ -257,7 +169,6 @@
             "type": "string"
           },
           "forbid": {
-            "description": "Tools that must NOT be called. This is the data-minimisation check — e.g. a health-only query must not reach the tax API.",
             "items": {
               "type": "string"
             },
@@ -281,93 +192,6 @@
         "title": "TestCase",
         "type": "object"
       },
-      "TestResult": {
-        "properties": {
-          "answer": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Answer"
-          },
-          "called": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Called",
-            "type": "array"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Set if the run raised before assertions could be checked.",
-            "title": "Error"
-          },
-          "forbidden": {
-            "default": [],
-            "description": "Forbidden tools that were called anyway.",
-            "items": {
-              "type": "string"
-            },
-            "title": "Forbidden",
-            "type": "array"
-          },
-          "missing": {
-            "default": [],
-            "description": "Expected tools that were not called.",
-            "items": {
-              "type": "string"
-            },
-            "title": "Missing",
-            "type": "array"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "parse_error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parse Error"
-          },
-          "pass": {
-            "title": "Pass",
-            "type": "boolean"
-          },
-          "value_problems": {
-            "default": [],
-            "items": {
-              "type": "string"
-            },
-            "title": "Value Problems",
-            "type": "array"
-          }
-        },
-        "required": [
-          "name",
-          "pass"
-        ],
-        "title": "TestResult",
-        "type": "object"
-      },
       "TestSuiteIn": {
         "properties": {
           "tests": {
@@ -382,107 +206,6 @@
           "tests"
         ],
         "title": "TestSuiteIn",
-        "type": "object"
-      },
-      "TestSuiteOut": {
-        "properties": {
-          "passed": {
-            "title": "Passed",
-            "type": "integer"
-          },
-          "results": {
-            "items": {
-              "$ref": "#/components/schemas/TestResult"
-            },
-            "title": "Results",
-            "type": "array"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "results",
-          "passed",
-          "total"
-        ],
-        "title": "TestSuiteOut",
-        "type": "object"
-      },
-      "TraceEvent": {
-        "properties": {
-          "args": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Arguments sent, on call events.",
-            "title": "Args"
-          },
-          "ms": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Round-trip time in milliseconds, on result events.",
-            "title": "Ms"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "HTTP status, on result events. 599 means the request never completed.",
-            "title": "Status"
-          },
-          "text": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Present on thinking, final and error events.",
-            "title": "Text"
-          },
-          "tool": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Tool id, on call and result events.",
-            "title": "Tool"
-          },
-          "type": {
-            "description": "One of: thinking, call, result, final, error.",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type"
-        ],
-        "title": "TraceEvent",
         "type": "object"
       },
       "ValidationError": {
@@ -528,20 +251,14 @@
     }
   },
   "info": {
-    "description": "Config-driven government data broker. Send a loosely-identified subject and a list of wanted fields; the agent decides which agency APIs to call, in what order, and returns exactly those field names.\n\nSee docs/MIDDLEWARE.md for integration patterns.",
-    "license": {
-      "identifier": "MIT",
-      "name": "MIT"
-    },
     "title": "DataMaster",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "x-generated-by": "GENERATED FILE — do not edit by hand. Produced by scripts/gen_openapi.py from the route definitions in app/main.py."
   },
   "openapi": "3.1.0",
   "paths": {
     "/": {
       "get": {
-        "description": "Serves the playground and config editor.",
         "operationId": "index__get",
         "responses": {
           "200": {
@@ -551,43 +268,181 @@
               }
             },
             "description": "Successful Response"
-          },
-          "404": {
-            "description": "frontend/index.html is missing from the checkout."
           }
         },
-        "summary": "Console",
-        "tags": [
-          "UI"
-        ]
+        "summary": "Index"
       }
     },
-    "/api/config": {
+    "/api/changes": {
       "get": {
-        "description": "Returns entries exactly as stored, with ${GOV_API_BASE} unexpanded.",
-        "operationId": "get_config_api_config_get",
+        "operationId": "get_changes_api_changes_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigOut"
-                }
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Changes"
+      }
+    },
+    "/api/changes/simulate-oss-v2": {
+      "post": {
+        "description": "Reliable local stand-in for the production GitHub App delivery path.",
+        "operationId": "simulate_oss_v2_api_changes_simulate_oss_v2_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Simulate Oss V2"
+      }
+    },
+    "/api/changes/{proposal_id}/approve": {
+      "post": {
+        "operationId": "post_change_approve_api_changes__proposal_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             },
             "description": "Successful Response"
           },
           "422": {
-            "description": "config.json on disk is malformed or fails validation."
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Read the agency registry",
-        "tags": [
-          "Config"
-        ]
+        "summary": "Post Change Approve"
+      }
+    },
+    "/api/changes/{proposal_id}/mapping": {
+      "patch": {
+        "operationId": "patch_change_mapping_api_changes__proposal_id__mapping_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MappingEditIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Change Mapping"
+      }
+    },
+    "/api/changes/{proposal_id}/reject": {
+      "post": {
+        "operationId": "post_change_reject_api_changes__proposal_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Change Reject"
+      }
+    },
+    "/api/config": {
+      "get": {
+        "operationId": "get_config_api_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Config"
       },
       "put": {
-        "description": "Validates every entry before writing. Rejects the whole payload on any failure. Takes effect on the next query — no restart.",
         "operationId": "put_config_api_config_put",
         "requestBody": {
           "content": {
@@ -603,9 +458,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConfigSaved"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -621,15 +474,202 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Replace the agency registry",
-        "tags": [
-          "Config"
-        ]
+        "summary": "Put Config"
+      }
+    },
+    "/api/demo/reset": {
+      "post": {
+        "operationId": "reset_demo_api_demo_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Demo"
+      }
+    },
+    "/api/demo/tests": {
+      "post": {
+        "description": "Run isolated acceptance checks without changing the live demo state.",
+        "operationId": "demo_tests_api_demo_tests_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Demo Tests"
+      }
+    },
+    "/api/github/webhook": {
+      "post": {
+        "description": "Model a signed GitHub App event; never apply a proposal automatically.",
+        "operationId": "github_webhook_api_github_webhook_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Github Webhook"
+      }
+    },
+    "/api/onboarding": {
+      "get": {
+        "operationId": "get_onboarding_api_onboarding_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Onboarding"
+      }
+    },
+    "/api/onboarding/query": {
+      "post": {
+        "operationId": "post_onboarding_query_api_onboarding_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyQueryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Onboarding Query"
+      }
+    },
+    "/api/onboarding/scan": {
+      "post": {
+        "operationId": "post_onboarding_scan_api_onboarding_scan_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Post Onboarding Scan"
+      }
+    },
+    "/api/onboarding/{proposal_id}/approve": {
+      "post": {
+        "operationId": "post_onboarding_approve_api_onboarding__proposal_id__approve_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Onboarding Approve"
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "operationId": "overview_api_overview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Overview"
       }
     },
     "/api/query": {
       "post": {
-        "description": "Runs the full routing loop and returns once the agent produces an answer. Use the SSE endpoint if you want live progress.",
         "operationId": "post_query_api_query_post",
         "requestBody": {
           "content": {
@@ -645,9 +685,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryOut"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -663,15 +701,11 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Run a query (blocking)",
-        "tags": [
-          "Query"
-        ]
+        "summary": "Post Query"
       }
     },
     "/api/query/stream": {
       "get": {
-        "description": "Same semantics as POST /api/query, but each routing step arrives as an event. Event types: thinking, call, result, final, error. Terminates with an event named `done`.",
         "operationId": "stream_query_api_query_stream_get",
         "parameters": [
           {
@@ -713,21 +747,18 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Run a query (Server-Sent Events)",
-        "tags": [
-          "Query"
-        ]
+        "summary": "Stream Query"
       }
     },
-    "/api/tests/run": {
+    "/api/repositories/connect": {
       "post": {
-        "description": "Each case may require tools (`expect`), forbid tools (`forbid`), and assert exact values. Routing is non-deterministic, so this measures it rather than proving it.",
-        "operationId": "run_tests_api_tests_run_post",
+        "description": "Document the exposed APIs in a bounded public GitHub repository clone.",
+        "operationId": "connect_public_repository_api_repositories_connect_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TestSuiteIn"
+                "$ref": "#/components/schemas/RepositoryConnectIn"
               }
             }
           },
@@ -737,9 +768,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TestSuiteOut"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -755,16 +784,23 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Run an assertion suite",
-        "tags": [
-          "Tests"
-        ]
+        "summary": "Connect Public Repository"
       }
     },
-    "/permit": {
-      "get": {
-        "description": "The form lives in the batam-permit repo. 404s if PERMIT_URL is unset.",
-        "operationId": "permit_page_permit_get",
+    "/api/resolve": {
+      "post": {
+        "description": "Stable downstream contract; callers never send upstream field names.",
+        "operationId": "post_resolve_api_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -774,42 +810,87 @@
             },
             "description": "Successful Response"
           },
-          "307": {
-            "description": "Redirect to PERMIT_URL."
-          },
-          "404": {
-            "description": "PERMIT_URL is not configured in .env."
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
-        "summary": "Redirect to the permit form",
-        "tags": [
-          "UI"
-        ]
+        "summary": "Post Resolve"
+      }
+    },
+    "/api/services": {
+      "get": {
+        "operationId": "services_api_services_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Services"
+      }
+    },
+    "/api/tests/run": {
+      "post": {
+        "operationId": "run_tests_api_tests_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestSuiteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Tests"
+      }
+    },
+    "/permit": {
+      "get": {
+        "operationId": "permit_page_permit_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Permit Page"
       }
     }
-  },
-  "servers": [
-    {
-      "description": "Wherever this service is running (see .env)",
-      "url": "/"
-    }
-  ],
-  "tags": [
-    {
-      "description": "Run the routing agent.",
-      "name": "Query"
-    },
-    {
-      "description": "Read and replace the agency registry.",
-      "name": "Config"
-    },
-    {
-      "description": "Assert routing behaviour, including data minimisation.",
-      "name": "Tests"
-    },
-    {
-      "description": "Static pages and redirects.",
-      "name": "UI"
-    }
-  ]
+  }
 }

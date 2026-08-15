@@ -1,0 +1,15 @@
+{
+  "consumers": {
+    "bpbatam_iuk_logistik_demo": {
+      "name": "BP Batam IUK Logistik Demo",
+      "uses": [
+        "person.nik",
+        "business.nib",
+        "business.company_name",
+        "business.npwp",
+        "business.company_deed",
+        "bpbatam.land_record"
+      ]
+    }
+  }
+}

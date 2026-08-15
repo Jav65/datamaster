@@ -1,0 +1,41 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "OSS Business Registration API",
+    "version": "2.0.0"
+  },
+  "paths": {
+    "/oss/business-by-director": {
+      "get": {
+        "operationId": "getBusinessByDirector",
+        "summary": "Get business registration by director NIK",
+        "parameters": [
+          {
+            "name": "nik",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Business registration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "business_identification_number": {"type": ["string", "null"]},
+                    "legal_name": {"type": ["string", "null"]},
+                    "activity_codes": {"type": "array", "items": {"type": "string"}},
+                    "risk_classification": {"type": ["string", "null"]}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

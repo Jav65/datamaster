@@ -1,18 +1,9 @@
-"""
-agent.py — the DataMaster brain.
+"""OpenAI-powered tool-routing agent used by DataMaster's Playground.
 
-Pattern: single tool-calling agent.
-  config.json entry  →  Anthropic tool definition
-  LLM picks tools    →  we execute real HTTP calls
-  results fed back   →  LLM composes a JSON answer with EXACTLY
-                        the output fields the caller requested.
-
-Input is flexible-named JSON-ish, e.g.  {name: Budi, no: +62810320123}
-Output spec is a field list, e.g.       {testResult, bloodType, lastUpdated}
-The LLM maps loose names ("no" → phone, "bloodType" → blood_type) itself.
-
-Every step is reported through an on_trace callback so the frontend
-can render a live trace (SSE).
+Each configured government API becomes a strict Responses API function tool.
+The model selects tools, DataMaster executes the HTTP calls, and their results
+are returned to the model until it produces the exact requested JSON fields.
+Every step is emitted to the browser as a trace event.
 """
 
 from __future__ import annotations
@@ -25,116 +16,117 @@ from pathlib import Path
 from typing import Any, Callable
 
 import httpx
-from anthropic import Anthropic
 from dotenv import load_dotenv
 
-# .env lives in the project root (one level above app/), found regardless of CWD
-# override=False: a real environment variable (Docker, CI, systemd) must win
-# over the local .env file, which is a developer convenience only.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
 
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-
-
-def require_api_key() -> str:
-    """
-    Validate the key at the point of use rather than at import.
-
-    Importing this module must stay side-effect-free so that tooling which
-    only needs the app object — OpenAPI generation in CI, for instance — can
-    run without a secret. run.py still checks at startup, so a misconfigured
-    server fails immediately rather than on the first query.
-    """
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key.startswith("sk-ant-"):
-        raise RuntimeError(
-            f"ANTHROPIC_API_KEY missing or malformed (got {len(key)} chars). "
-            "Put it in datamaster/.env as: ANTHROPIC_API_KEY=sk-ant-..."
-        )
-    return key
-
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
-MODEL = "claude-sonnet-4-6"
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+DEFAULT_MODEL = "gpt-5.6"
 MAX_ROUNDS = 6
-
-# The agency endpoints live in a separate repo and may run anywhere.
-# config.json stores "${GOV_API_BASE}/dukcapil/getNIK" rather than a hardcoded
-# host; the placeholder is expanded at call time — not at load time — so that
-# a config saved from the UI round-trips without baking in whatever host
-# happened to be set when someone clicked Save.
-GOV_API_BASE = os.environ.get("GOV_API_BASE", "http://localhost:9001").rstrip("/")
-
-
-def resolve_url(url: str) -> str:
-    """Expand ${GOV_API_BASE} in a configured endpoint URL."""
-    return url.replace("${GOV_API_BASE}", GOV_API_BASE)
 
 SYSTEM = """You are DataMaster, a data broker middleware for Indonesian government APIs.
 
-You receive:
-1. INPUT — a loosely-formatted object identifying a subject. Key names are
-   arbitrary (e.g. "no", "hp", "telp" may mean phone; "nama" means name).
-   Infer the meaning of each key.
-2. REQUESTED OUTPUT FIELDS — the exact field names the caller wants back.
+You receive a loosely formatted subject and exact requested output field names.
+Infer flexible input names such as no/hp/telp as phone and nama as name.
 
-Decide which registered APIs to call (often chained: identity resolution first),
-gather the data, then respond with ONLY a valid JSON object:
-- keys: EXACTLY the requested field names, verbatim, no additions, no renames
-- values: the data found; use null if unavailable (never invent data);
-  you may add a "_note" key ONLY if something needs explaining
-- no markdown, no code fences, no prose before or after the JSON."""
+Rules:
+- Use the provided government API tools whenever their data is required.
+- Chain calls when necessary; for example identity first, then NIK-based tools.
+- Never invent government data.
+- Return every requested output field using its exact spelling.
+- Use null when a requested value is unavailable.
+- Do not add fields that were not requested.
+- The final response must be the schema-constrained JSON object only."""
+
+
+class LLMUnavailableError(RuntimeError):
+    """Raised when the OpenAI-backed Playground cannot run."""
+
+
+def _api_key() -> str:
+    return os.environ.get("OPENAI_API_KEY", "").strip()
+
+
+def query_model() -> str:
+    return (
+        os.environ.get("OPENAI_QUERY_MODEL", "").strip()
+        or os.environ.get("OPENAI_REPOSITORY_MODEL", "").strip()
+        or DEFAULT_MODEL
+    )
+
+
+def llm_available() -> bool:
+    """Return whether the OpenAI-powered query Playground can be used."""
+
+    return bool(_api_key())
 
 
 # ---------- config ----------
 
 def load_config() -> list[dict]:
-    with open(CONFIG_PATH) as f:
-        data = json.load(f)
+    with CONFIG_PATH.open() as config_file:
+        data = json.load(config_file)
     apis = data["apis"] if isinstance(data, dict) else data
-    for e in apis:
-        validate_entry(e)
+    for entry in apis:
+        validate_entry(entry)
     return apis
 
 
 def save_config(apis: list[dict]) -> None:
-    for e in apis:
-        validate_entry(e)
-    CONFIG_PATH.write_text(json.dumps({"apis": apis}, indent=2))
+    for entry in apis:
+        validate_entry(entry)
+    CONFIG_PATH.write_text(json.dumps({"apis": apis}, indent=2) + "\n")
 
 
-def validate_entry(e: dict) -> None:
+def validate_entry(entry: dict) -> None:
     for key in ("id", "api", "desc"):
-        if not e.get(key, "").strip():
-            raise ValueError(f"config entry missing required field '{key}': {e}")
-    for p in e.get("params", []):
-        if not p.get("name"):
-            raise ValueError(f"param without name in '{e['id']}'")
+        if not str(entry.get(key, "")).strip():
+            raise ValueError(f"config entry missing required field '{key}': {entry}")
+    for parameter in entry.get("params", []):
+        if not parameter.get("name"):
+            raise ValueError(f"param without name in '{entry['id']}'")
 
 
-# ---------- config → tools ----------
+# ---------- config to OpenAI function tools ----------
 
 def tool_name(entry: dict) -> str:
-    return "".join(ch if ch.isalnum() or ch in "_-" else "_" for ch in entry["id"])[:64]
+    return "".join(
+        character if character.isalnum() or character in "_-" else "_"
+        for character in entry["id"]
+    )[:64]
 
 
 def build_tools(apis: list[dict]) -> list[dict]:
+    """Create strict function tools following the Responses API schema."""
+
     tools = []
-    for e in apis:
-        props = {
-            p["name"]: {
-                "type": "number" if p.get("type") == "number" else "string",
-                "description": p.get("desc", ""),
+    for entry in apis:
+        properties: dict[str, dict[str, Any]] = {}
+        parameters = entry.get("params", [])
+        for parameter in parameters:
+            base_type = "number" if parameter.get("type") == "number" else "string"
+            parameter_type: str | list[str] = base_type
+            if not parameter.get("required"):
+                parameter_type = [base_type, "null"]
+            properties[parameter["name"]] = {
+                "type": parameter_type,
+                "description": parameter.get("desc", ""),
             }
-            for p in e.get("params", [])
-        }
         tools.append(
             {
-                "name": tool_name(e),
-                "description": f"{e['desc']}\nEndpoint: {resolve_url(e['api'])}\nReturns: {e.get('returns', 'unspecified')}",
-                "input_schema": {
+                "type": "function",
+                "name": tool_name(entry),
+                "description": (
+                    f"{entry['desc']}\nEndpoint: {entry['api']}\n"
+                    f"Returns: {entry.get('returns', 'unspecified')}"
+                ),
+                "strict": True,
+                "parameters": {
                     "type": "object",
-                    "properties": props,
-                    "required": [p["name"] for p in e.get("params", []) if p.get("required")],
+                    "properties": properties,
+                    "required": [parameter["name"] for parameter in parameters],
+                    "additionalProperties": False,
                 },
             }
         )
@@ -143,32 +135,83 @@ def build_tools(apis: list[dict]) -> list[dict]:
 
 # ---------- HTTP executor ----------
 
-def execute_api(entry: dict, args: dict) -> tuple[int, Any, float]:
-    """Call the real endpoint from config. Returns (status, body, ms)."""
-    t0 = time.perf_counter()
+def execute_api(entry: dict, arguments: dict) -> tuple[int, Any, float]:
+    """Call one configured government endpoint and return status, body, and ms."""
+
+    started = time.perf_counter()
+    endpoint = os.path.expandvars(entry["api"])
     try:
         method = entry.get("method", "GET").upper()
-        url = resolve_url(entry["api"])
-        with httpx.Client(timeout=10) as client:
+        with httpx.Client(timeout=10.0) as client:
             if method == "GET":
-                r = client.get(url, params=args)
+                response = client.get(endpoint, params=arguments)
             else:
-                r = client.request(method, url, json=args)
-        ms = (time.perf_counter() - t0) * 1000
+                response = client.request(method, endpoint, json=arguments)
+        elapsed_ms = (time.perf_counter() - started) * 1_000
         try:
-            body = r.json()
-        except Exception:
-            body = {"raw": r.text[:2000]}
-        return r.status_code, body, ms
+            body = response.json()
+        except ValueError:
+            body = {"raw": response.text[:2_000]}
+        return response.status_code, body, elapsed_ms
     except Exception as exc:
-        ms = (time.perf_counter() - t0) * 1000
-        return 599, {"error": f"request failed: {exc}"}, ms
+        elapsed_ms = (time.perf_counter() - started) * 1_000
+        return 599, {"error": f"request failed: {exc}"}, elapsed_ms
 
 
-# ---------- JSON extraction ----------
+# ---------- output schemas and parsing ----------
+
+def requested_field_names(output_fields: str) -> list[str]:
+    """Parse the Playground's compact ``{fieldOne, fieldTwo}`` syntax."""
+
+    compact = output_fields.strip()
+    if compact[:1] in "{[" and compact[-1:] in "}]":
+        compact = compact[1:-1]
+    fields = [part.strip().strip("\"'") for part in compact.split(",") if part.strip()]
+    if not fields:
+        raise ValueError("Enter at least one requested output field")
+    if len(fields) > 30:
+        raise ValueError("At most 30 output fields can be requested")
+    if len(fields) != len(set(fields)):
+        raise ValueError("Requested output fields must be unique")
+    for field in fields:
+        if len(field) > 80 or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.-]*", field):
+            raise ValueError(f"Invalid requested output field: {field}")
+    return fields
+
+
+def answer_format(fields: list[str]) -> dict[str, Any]:
+    scalar_or_list = {
+        "anyOf": [
+            {"type": "string"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"},
+            {
+                "type": "array",
+                "items": {
+                    "anyOf": [
+                        {"type": "string"},
+                        {"type": "number"},
+                        {"type": "boolean"},
+                    ]
+                },
+            },
+        ]
+    }
+    return {
+        "type": "json_schema",
+        "name": "datamaster_query_answer",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {field: scalar_or_list for field in fields},
+            "required": fields,
+            "additionalProperties": False,
+        },
+    }
+
 
 def parse_json_answer(text: str) -> tuple[dict | None, str | None]:
-    """Best-effort: strip fences, find outermost {...}, parse."""
     cleaned = re.sub(r"```(?:json)?", "", text).strip()
     start, end = cleaned.find("{"), cleaned.rfind("}")
     if start == -1 or end == -1 or end <= start:
@@ -179,65 +222,172 @@ def parse_json_answer(text: str) -> tuple[dict | None, str | None]:
         return None, f"invalid JSON: {exc}"
 
 
-# ---------- the agent loop ----------
+def _output_text(payload: dict[str, Any]) -> str:
+    direct = payload.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct
+    texts = []
+    for item in payload.get("output", []):
+        if item.get("type") != "message":
+            continue
+        for content in item.get("content", []):
+            if content.get("type") == "refusal":
+                raise LLMUnavailableError("OpenAI declined to process this query")
+            if content.get("type") == "output_text":
+                texts.append(str(content.get("text", "")))
+    return "\n".join(texts)
+
+
+def _create_response(client: httpx.Client, payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        response = client.post(
+            OPENAI_RESPONSES_URL,
+            headers={
+                "Authorization": f"Bearer {_api_key()}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        )
+    except httpx.RequestError as exc:
+        raise LLMUnavailableError("DataMaster could not reach the OpenAI API") from exc
+    if response.is_error:
+        try:
+            message = response.json().get("error", {}).get("message", "")
+        except ValueError:
+            message = ""
+        safe_message = str(message).strip()[:300] or f"HTTP {response.status_code}"
+        raise LLMUnavailableError(f"OpenAI query routing failed: {safe_message}")
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise LLMUnavailableError("OpenAI returned an invalid API response") from exc
+
+
+# ---------- agent loop ----------
 
 def run_agent(
     input_data: str,
     output_fields: str,
     apis: list[dict] | None = None,
-    on_trace: Callable[[dict], None] = lambda ev: None,
+    on_trace: Callable[[dict], None] = lambda event: None,
+    *,
+    openai_client: httpx.Client | None = None,
 ) -> dict:
-    """
-    input_data:    loose JSON-ish subject, e.g. "{name: Budi, no: +62810320123}"
-    output_fields: requested fields, e.g.   "{testResult, bloodType, lastUpdated}"
+    """Route a flexible query through registered APIs with OpenAI tools."""
 
-    Returns {"answer": dict|None, "raw": str, "parse_error": str|None,
-             "called_tools": [str], "trace": [events]}.
-    """
+    if not llm_available():
+        raise LLMUnavailableError(
+            "The Playground requires OPENAI_API_KEY on the DataMaster server"
+        )
+    fields = requested_field_names(output_fields)
     apis = apis if apis is not None else load_config()
     tools = build_tools(apis)
-    by_name = {tool_name(e): e for e in apis}
-    client = Anthropic(api_key=require_api_key())
-
-    user_msg = f"INPUT:\n{input_data}\n\nREQUESTED OUTPUT FIELDS:\n{output_fields}"
-    messages: list[dict] = [{"role": "user", "content": user_msg}]
+    by_name = {tool_name(entry): entry for entry in apis}
+    input_items: list[dict[str, Any]] = [
+        {
+            "role": "user",
+            "content": (
+                f"INPUT:\n{input_data}\n\n"
+                f"REQUESTED OUTPUT FIELDS:\n{json.dumps(fields)}"
+            ),
+        }
+    ]
     trace: list[dict] = []
     called: list[str] = []
 
-    def emit(ev: dict) -> None:
-        trace.append(ev)
-        on_trace(ev)
+    def emit(event: dict) -> None:
+        trace.append(event)
+        on_trace(event)
 
-    for round_no in range(MAX_ROUNDS):
-        emit({"type": "thinking", "round": round_no})
-        resp = client.messages.create(
-            model=MODEL, max_tokens=1000, system=SYSTEM, messages=messages, tools=tools
-        )
-        tool_uses = [b for b in resp.content if b.type == "tool_use"]
-        text = "\n".join(b.text for b in resp.content if b.type == "text")
-
-        if not tool_uses:
-            parsed, perr = parse_json_answer(text)
-            emit({"type": "final", "json": parsed, "raw": text, "parse_error": perr})
-            return {"answer": parsed, "raw": text, "parse_error": perr,
-                    "called_tools": called, "trace": trace}
-
-        messages.append({"role": "assistant", "content": resp.content})
-        results = []
-        for tu in tool_uses:
-            entry = by_name.get(tu.name)
-            emit({"type": "call", "tool": tu.name, "api": entry["api"] if entry else "?", "args": tu.input})
-            if entry:
-                status, body, ms = execute_api(entry, tu.input)
-            else:
-                status, body, ms = 500, {"error": "unknown tool"}, 0.0
-            called.append(tu.name)
-            emit({"type": "result", "tool": tu.name, "status": status, "ms": round(ms), "body": body})
-            results.append(
-                {"type": "tool_result", "tool_use_id": tu.id, "content": json.dumps(body)}
+    owns_client = openai_client is None
+    if openai_client is None:
+        openai_client = httpx.Client(timeout=httpx.Timeout(90.0, connect=10.0))
+    try:
+        for round_number in range(MAX_ROUNDS):
+            emit({"type": "thinking", "round": round_number})
+            response = _create_response(
+                openai_client,
+                {
+                    "model": query_model(),
+                    "store": False,
+                    "instructions": SYSTEM,
+                    "input": input_items,
+                    "tools": tools,
+                    "parallel_tool_calls": True,
+                    "text": {"format": answer_format(fields)},
+                    "max_output_tokens": 2_000,
+                },
             )
-        messages.append({"role": "user", "content": results})
+            function_calls = [
+                item for item in response.get("output", [])
+                if item.get("type") == "function_call"
+            ]
+            if not function_calls:
+                text = _output_text(response)
+                parsed, parse_error = parse_json_answer(text)
+                emit(
+                    {
+                        "type": "final",
+                        "json": parsed,
+                        "raw": text,
+                        "parse_error": parse_error,
+                    }
+                )
+                return {
+                    "answer": parsed,
+                    "raw": text,
+                    "parse_error": parse_error,
+                    "called_tools": called,
+                    "trace": trace,
+                }
 
-    emit({"type": "final", "json": None, "raw": "", "parse_error": "stopped: too many rounds"})
-    return {"answer": None, "raw": "", "parse_error": "stopped: too many rounds",
-            "called_tools": called, "trace": trace}
+            input_items.extend(response.get("output", []))
+            for function_call in function_calls:
+                name = str(function_call.get("name", ""))
+                entry = by_name.get(name)
+                try:
+                    arguments = json.loads(function_call.get("arguments", "{}"))
+                except json.JSONDecodeError:
+                    arguments = {}
+                emit(
+                    {
+                        "type": "call",
+                        "tool": name,
+                        "api": entry["api"] if entry else "?",
+                        "args": arguments,
+                    }
+                )
+                if entry:
+                    status, body, elapsed_ms = execute_api(entry, arguments)
+                else:
+                    status, body, elapsed_ms = 500, {"error": "unknown tool"}, 0.0
+                called.append(name)
+                emit(
+                    {
+                        "type": "result",
+                        "tool": name,
+                        "status": status,
+                        "ms": round(elapsed_ms),
+                        "body": body,
+                    }
+                )
+                input_items.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": function_call["call_id"],
+                        "output": json.dumps({"status": status, "body": body}),
+                    }
+                )
+    finally:
+        if owns_client:
+            openai_client.close()
+
+    error = "stopped: too many tool-calling rounds"
+    emit({"type": "final", "json": None, "raw": "", "parse_error": error})
+    return {
+        "answer": None,
+        "raw": "",
+        "parse_error": error,
+        "called_tools": called,
+        "trace": trace,
+    }

@@ -1,17 +1,10 @@
-"""
-main.py — DataMaster HTTP server.
+"""DataMaster HTTP boundary for the stable resolver and judge-facing console.
 
-Endpoints:
-  GET  /                       → frontend (single HTML file)
-  GET  /permit                 → redirect to the permit form (PERMIT_URL in .env)
-  GET  /api/config             → current registry
-  PUT  /api/config             → replace registry (validated)
-  POST /api/query              → run agent, return full trace (blocking)
-  GET  /api/query/stream       → run agent, stream trace live via SSE
-                                 params: input=…&fields=…
-  POST /api/tests/run          → run assertion suite
+The deterministic permit, policy, registry, onboarding, contract-change, reset,
+and test endpoints work without an LLM. The older flexible query playground is
+kept as an optional, gracefully degrading feature.
 
-Run:  python run.py          (host/port come from .env)
+Run with ``python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000``.
 """
 
 from __future__ import annotations
@@ -22,249 +15,124 @@ import queue
 import threading
 from pathlib import Path
 
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
-# Load .env before importing agent — it reads ANTHROPIC_API_KEY and
-# GOV_API_BASE at import time.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
 
-from app.agent import load_config, run_agent, save_config, validate_entry  # noqa: E402
-
-app = FastAPI(
-    title="DataMaster",
-    version="1.0.0",
-    description=(
-        "Config-driven government data broker. Send a loosely-identified "
-        "subject and a list of wanted fields; the agent decides which agency "
-        "APIs to call, in what order, and returns exactly those field names.\n\n"
-        "See docs/MIDDLEWARE.md for integration patterns."
-    ),
-    servers=[{"url": "/", "description": "Wherever this service is running (see .env)"}],
-    license_info={"name": "MIT", "identifier": "MIT"},
-    openapi_tags=[
-        {"name": "Query", "description": "Run the routing agent."},
-        {"name": "Config", "description": "Read and replace the agency registry."},
-        {"name": "Tests", "description": "Assert routing behaviour, including data minimisation."},
-        {"name": "UI", "description": "Static pages and redirects."},
-    ],
+from app.agent import (
+    LLMUnavailableError,
+    llm_available,
+    load_config,
+    run_agent,
+    save_config,
+    validate_entry,
 )
-
-# The permit form is served from its own origin now, so it needs to be allowed
-# explicitly. Set CORS_ORIGINS=* in .env to fall back to open access.
-_origins = os.getenv("CORS_ORIGINS", "*").strip()
-ALLOWED_ORIGINS = ["*"] if _origins == "*" else [o.strip() for o in _origins.split(",") if o.strip()]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from app.change_manager import (
+    ChangeError,
+    approve_change,
+    detect_oss_v2_change,
+    edit_mapping,
+    list_changes,
+    reject_change,
 )
+from app.demo_checks import run_demo_checks
+from app.github_webhook import WebhookError, parse_oss_contract_event, verify_signature
+from app.onboarding import (
+    OnboardingError,
+    approve_onboarding,
+    list_onboarding,
+    query_legacy_lms,
+    scan_legacy_lms,
+)
+from app.policy import PolicyDenied
+from app.repository_scanner import (
+    DEFAULT_OPENAI_MODEL,
+    RepositoryScanError,
+    connect_repository,
+)
+from app.resolver import ResolutionError, resolve
+from app.state_store import STORE
+
+app = FastAPI(title="DataMaster")
 
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 
-# The permit form lives in the batam-permit repo. /permit redirects there.
-PERMIT_URL = os.getenv("PERMIT_URL", "").strip()
-
 
 # ---------- models ----------
-#
-# Field descriptions and examples here are not decoration: they are the only
-# source the generated OpenAPI spec has. A bare `input: str` produces a spec
-# an integrator cannot use.
 
 class QueryIn(BaseModel):
-    input: str = Field(
-        ...,
-        description=(
-            "Loosely-formatted object identifying the subject. Key names are "
-            "arbitrary — 'no', 'hp' and 'telp' are all understood as phone."
-        ),
-        examples=["{name: John Doe, phone: +62838292938}"],
-    )
-    fields: str = Field(
-        ...,
-        description=(
-            "Exact output field names wanted back. Returned verbatim as the "
-            "keys of `answer`, with no renaming or additions."
-        ),
-        examples=["{npwp, companyName, bloodType}"],
-    )
-
-
-class TraceEvent(BaseModel):
-    type: str = Field(..., description="One of: thinking, call, result, final, error.")
-    text: str | None = Field(None, description="Present on thinking, final and error events.")
-    tool: str | None = Field(None, description="Tool id, on call and result events.")
-    args: dict | None = Field(None, description="Arguments sent, on call events.")
-    status: int | None = Field(None, description="HTTP status, on result events. 599 means the request never completed.")
-    ms: float | None = Field(None, description="Round-trip time in milliseconds, on result events.")
-
-
-class QueryOut(BaseModel):
-    answer: dict | None = Field(
-        None,
-        description=(
-            "Keys exactly as requested in `fields`. Unavailable values are "
-            "null, never invented. May carry a `_note` key when something "
-            "needs explaining."
-        ),
-        examples=[{"npwp": "09.254.294.3-217.000", "companyName": "PT Selat Niaga Makmur"}],
-    )
-    called_tools: list[str] = Field(
-        default_factory=list,
-        description="Agency APIs actually called, in order. This is the audit trail.",
-    )
-    trace: list[TraceEvent] = Field(default_factory=list, description="Every routing step.")
-    raw: str = Field("", description="The model's unparsed final message.")
-    parse_error: str | None = Field(None, description="Set when `raw` could not be parsed as JSON.")
-
-
-class ApiParam(BaseModel):
-    name: str = Field(..., description="Query-string parameter name.")
-    type: str = Field("string", description="'string' or 'number'.")
-    required: bool = Field(False, description="Whether the agent must supply it.")
-    desc: str = Field("", description="Written for the agent, not for a human reader.")
-
-
-class ApiEntry(BaseModel):
-    id: str = Field(..., description="Stable identifier; becomes the tool name.", examples=["dukcapil_getNIK"])
-    api: str = Field(
-        ...,
-        description=(
-            "Endpoint URL. May contain ${GOV_API_BASE}, expanded from the "
-            "environment when the call is made."
-        ),
-        examples=["${GOV_API_BASE}/dukcapil/getNIK"],
-    )
-    method: str = Field("GET", description="HTTP method.")
-    desc: str = Field(..., description="The routing logic. The agent reads this to decide when to call.")
-    params: list[ApiParam] = Field(default_factory=list)
-    returns: str = Field("", description="Human-readable summary of the response shape.")
+    input: str          # loose JSON-ish subject: "{name: Budi, no: +62810...}"
+    fields: str         # requested output fields: "{testResult, bloodType}"
 
 
 class ConfigIn(BaseModel):
-    apis: list[dict] = Field(..., description="Full registry. Replaces the existing one wholesale.")
-
-
-class ConfigOut(BaseModel):
-    apis: list[ApiEntry] = Field(
-        ...,
-        description=(
-            "The registry as stored. `api` values are returned unexpanded, so "
-            "that a round-trip through PUT does not bake in the current host."
-        ),
-    )
-
-
-class ConfigSaved(BaseModel):
-    ok: bool
-    count: int = Field(..., description="Number of entries saved.")
+    apis: list[dict]
 
 
 class TestCase(BaseModel):
     name: str
     input: str
     fields: str
-    expect: list[str] = Field(default_factory=list, description="Tools that MUST be called.")
-    forbid: list[str] = Field(
-        default_factory=list,
-        description=(
-            "Tools that must NOT be called. This is the data-minimisation "
-            "check — e.g. a health-only query must not reach the tax API."
-        ),
-    )
-    expect_values: dict = Field(default_factory=dict, description="Exact values expected in `answer`.")
+    expect: list[str] = Field(default_factory=list)  # tools that MUST be called
+    forbid: list[str] = Field(default_factory=list)  # tools that must NOT be called
+    expect_values: dict = Field(default_factory=dict)
 
 
 class TestSuiteIn(BaseModel):
     tests: list[TestCase]
 
 
-class TestResult(BaseModel):
+class SubjectIn(BaseModel):
     name: str
-    pass_: bool = Field(..., alias="pass")
-    called: list[str] = []
-    missing: list[str] = Field(default=[], description="Expected tools that were not called.")
-    forbidden: list[str] = Field(default=[], description="Forbidden tools that were called anyway.")
-    value_problems: list[str] = []
-    answer: dict | None = None
-    parse_error: str | None = None
-    error: str | None = Field(None, description="Set if the run raised before assertions could be checked.")
-
-    model_config = {"populate_by_name": True}
+    phone: str
 
 
-class TestSuiteOut(BaseModel):
-    results: list[TestResult]
-    passed: int
-    total: int
+class ResolveIn(BaseModel):
+    subject: SubjectIn
+    fields: list[str]
+    purpose: str
+
+
+class MappingEditIn(BaseModel):
+    concept: str
+    new_field: str
+
+
+class LegacyQueryIn(BaseModel):
+    nib: str
+
+
+class ResetIn(BaseModel):
+    actor: str = Field(default="demo_operator", max_length=100)
+
+
+class RepositoryConnectIn(BaseModel):
+    repository_url: str = Field(min_length=1, max_length=500)
 
 
 # ---------- frontend ----------
 
-@app.get(
-    "/",
-    tags=["UI"],
-    summary="Console",
-    description="Serves the playground and config editor.",
-    responses={404: {"description": "frontend/index.html is missing from the checkout."}},
-)
+@app.get("/")
 def index():
     return FileResponse(FRONTEND)
 
 
-@app.get(
-    "/permit",
-    tags=["UI"],
-    summary="Redirect to the permit form",
-    description="The form lives in the batam-permit repo. 404s if PERMIT_URL is unset.",
-    responses={
-        307: {"description": "Redirect to PERMIT_URL."},
-        404: {"description": "PERMIT_URL is not configured in .env."},
-    },
-)
+@app.get("/permit")
 def permit_page():
-    """
-    The permit form moved to the batam-permit repo. Redirect rather than
-    serve a file that no longer exists here.
-    """
-    if not PERMIT_URL:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "The permit form lives in the batam-permit repo. "
-                "Set PERMIT_URL in .env to enable this redirect."
-            ),
-        )
-    return RedirectResponse(PERMIT_URL)
+    return FileResponse(FRONTEND.parent / "permit.html")
 
 
 # ---------- config CRUD ----------
 
-@app.get(
-    "/api/config",
-    tags=["Config"],
-    summary="Read the agency registry",
-    description="Returns entries exactly as stored, with ${GOV_API_BASE} unexpanded.",
-    response_model=ConfigOut,
-    responses={422: {"description": "config.json on disk is malformed or fails validation."}},
-)
+@app.get("/api/config")
 def get_config():
     return {"apis": load_config()}
 
 
-@app.put(
-    "/api/config",
-    tags=["Config"],
-    summary="Replace the agency registry",
-    description="Validates every entry before writing. Rejects the whole payload on any failure. Takes effect on the next query — no restart.",
-    response_model=ConfigSaved,
-)
+@app.put("/api/config")
 def put_config(body: ConfigIn):
     try:
         for e in body.apis:
@@ -277,28 +145,212 @@ def put_config(body: ConfigIn):
 
 # ---------- query (blocking) ----------
 
-@app.post(
-    "/api/query",
-    tags=["Query"],
-    summary="Run a query (blocking)",
-    description="Runs the full routing loop and returns once the agent produces an answer. Use the SSE endpoint if you want live progress.",
-    response_model=QueryOut,
-)
+@app.post("/api/query")
 def post_query(body: QueryIn):
     try:
         return run_agent(body.input, body.fields)
+    except LLMUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+# ---------- stable semantic resolver ----------
+
+@app.post("/api/resolve")
+def post_resolve(body: ResolveIn):
+    """Stable downstream contract; callers never send upstream field names."""
+    try:
+        return resolve(
+            body.subject.model_dump(),
+            body.fields,
+            body.purpose,
+        )
+    except PolicyDenied as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "message": str(exc),
+                "purpose": exc.purpose,
+                "denied_fields": exc.denied_fields,
+                "executed_services": [],
+            },
+        ) from exc
+    except ResolutionError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={"message": str(exc), "service": exc.service},
+        ) from exc
+
+
+# ---------- control-layer read models ----------
+
+@app.get("/api/overview")
+def overview():
+    registry = STORE.registry()
+    dependencies = STORE.dependencies()["consumers"]
+    proposals = STORE.proposals()
+    pending = sum(
+        item["status"] == "pending"
+        for collection in proposals.values()
+        for item in collection
+    )
+    return {
+        "tagline": "Government Integration Control Layer",
+        "principle": (
+            "OpenAPI describes an API. DataMaster manages the dependency and "
+            "integration lifecycle across many APIs."
+        ),
+        "counts": {
+            "services": sum(
+                service.get("documentation_status") != "undocumented"
+                for service in registry["services"].values()
+            ),
+            "concepts": len(registry["concepts"]),
+            "consumers": len(dependencies),
+            "pending_reviews": pending,
+        },
+        "pending_changes": sum(
+            item["status"] == "pending" for item in proposals["changes"]
+        ),
+        "registry_revision": registry["revision"],
+        "llm_available": llm_available(),
+        "demo": STORE.demo(),
+    }
+
+
+@app.get("/api/services")
+def services():
+    registry = STORE.registry()
+    return {
+        "services": registry["services"],
+        "concepts": registry["concepts"],
+        "repository_connector": {
+            "openai_configured": bool(os.environ.get("OPENAI_API_KEY", "").strip()),
+            "model": os.environ.get("OPENAI_REPOSITORY_MODEL", DEFAULT_OPENAI_MODEL),
+        },
+    }
+
+
+@app.post("/api/repositories/connect")
+def connect_public_repository(body: RepositoryConnectIn):
+    """Document the exposed APIs in a bounded public GitHub repository clone."""
+    try:
+        return connect_repository(body.repository_url)
+    except RepositoryScanError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
+
+
+@app.post("/api/repositories/bp-batam/connect", include_in_schema=False)
+def connect_legacy_repository_route(body: RepositoryConnectIn):
+    """Keep stale browser tabs functional while they refresh to the generic UI."""
+    return connect_public_repository(body)
+
+
+# ---------- human-reviewed legacy onboarding ----------
+
+@app.get("/api/onboarding")
+def get_onboarding():
+    return {"proposals": list_onboarding()}
+
+
+@app.post("/api/onboarding/scan")
+def post_onboarding_scan():
+    try:
+        return scan_legacy_lms()
+    except OnboardingError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/onboarding/{proposal_id}/approve")
+def post_onboarding_approve(proposal_id: str):
+    try:
+        return approve_onboarding(proposal_id)
+    except OnboardingError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/onboarding/query")
+def post_onboarding_query(body: LegacyQueryIn):
+    try:
+        return query_legacy_lms(body.nib)
+    except OnboardingError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+# ---------- dependency-aware contract change review ----------
+
+@app.get("/api/changes")
+def get_changes():
+    return {"changes": list_changes(), "demo": STORE.demo()}
+
+
+@app.post("/api/changes/simulate-oss-v2")
+def simulate_oss_v2():
+    """Reliable local stand-in for the production GitHub App delivery path."""
+    try:
+        return detect_oss_v2_change("local_github_app_simulator")
+    except ChangeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.patch("/api/changes/{proposal_id}/mapping")
+def patch_change_mapping(proposal_id: str, body: MappingEditIn):
+    try:
+        return edit_mapping(proposal_id, body.concept, body.new_field)
+    except ChangeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/changes/{proposal_id}/approve")
+def post_change_approve(proposal_id: str):
+    try:
+        return approve_change(proposal_id)
+    except ChangeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/changes/{proposal_id}/reject")
+def post_change_reject(proposal_id: str):
+    try:
+        return reject_change(proposal_id)
+    except ChangeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/github/webhook")
+async def github_webhook(request: Request):
+    """Model a signed GitHub App event; never apply a proposal automatically."""
+    body = await request.body()
+    try:
+        verify_signature(body, request.headers.get("x-hub-signature-256"))
+        event = parse_oss_contract_event(body, request.headers.get("x-github-event"))
+    except WebhookError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    try:
+        proposal = detect_oss_v2_change("github_webhook")
+    except ChangeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"accepted": True, "event": event, "proposal": proposal}
+
+
+# ---------- deterministic demo reset ----------
+
+@app.post("/api/demo/reset")
+def reset_demo(body: ResetIn):
+    STORE.reset(body.actor)
+    return {"ok": True, "demo": STORE.demo(), "registry_revision": STORE.registry()["revision"]}
+
+
+@app.post("/api/demo/tests")
+def demo_tests():
+    """Run isolated acceptance checks without changing the live demo state."""
+    return run_demo_checks()
 
 
 # ---------- query (SSE live trace) ----------
 
-@app.get(
-    "/api/query/stream",
-    tags=["Query"],
-    summary="Run a query (Server-Sent Events)",
-    description="Same semantics as POST /api/query, but each routing step arrives as an event. Event types: thinking, call, result, final, error. Terminates with an event named `done`.",
-)
+@app.get("/api/query/stream")
 def stream_query(input: str, fields: str):
     ch: queue.Queue = queue.Queue()
 
@@ -344,13 +396,7 @@ def _check_values(answer: dict | None, expected: dict) -> list[str]:
     return problems
 
 
-@app.post(
-    "/api/tests/run",
-    tags=["Tests"],
-    summary="Run an assertion suite",
-    description="Each case may require tools (`expect`), forbid tools (`forbid`), and assert exact values. Routing is non-deterministic, so this measures it rather than proving it.",
-    response_model=TestSuiteOut,
-)
+@app.post("/api/tests/run")
 def run_tests(body: TestSuiteIn):
     results = []
     for t in body.tests:

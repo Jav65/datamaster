@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BP Batam Logistics Business Permit — Demo</title>
+<style>
+  :root { --ink:#f5f8fd; --paper:#fff; --navy:#0c2454; --navy2:#103b8f; --line:#dce5f3; --text:#17213a; --dim:#68758d; --blue:#2563eb; --bluebg:#eaf2ff; --green:#087f5b; --greenbg:#eaf8f2; --amber:#936100; --amberbg:#fff8e6; --red:#ba3f37; --redbg:#fff0ee }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--ink); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif }
+  button,input,textarea { font:inherit }
+  button { cursor:pointer }
+  code,.mono,pre { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace }
+  header { background:#fff; color:var(--navy); border-bottom:3px solid var(--blue); box-shadow:0 4px 18px #17458d0c }
+  .shell { max-width:960px; margin:auto; padding:0 24px }
+  .head { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 0 }
+  .header-meta { text-align:right }
+  h1 { font-size:24px; margin:0 0 4px; letter-spacing:-.4px }
+  h2 { font-size:18px; margin:0 0 7px }
+  h3 { font-size:14px; margin:0 }
+  p { margin-top:0 }
+  .powered { color:var(--blue); font-weight:700; font-size:13px }
+  .demo { padding:4px 8px; border:1px solid #b8cef2; background:var(--bluebg); color:var(--blue); border-radius:5px; font-size:11px; letter-spacing:1px }
+  a { color:var(--blue) }
+  main { padding-top:25px; padding-bottom:70px }
+  .card { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:14px; box-shadow:0 2px 7px #1628440b }
+  .context { display:grid; grid-template-columns:1fr auto; align-items:center; gap:18px; border-left:5px solid var(--blue) }
+  .context p { color:var(--dim); margin:5px 0 0; line-height:1.55 }
+  .company { font-weight:800; color:var(--navy2) }
+  .architecture { display:flex; justify-content:center; align-items:center; gap:9px; flex-wrap:wrap; padding:11px; color:var(--dim); font-size:12px }
+  .architecture b { background:#e9eef6; color:var(--navy2); border-radius:6px; padding:6px 9px }
+  .sectionhead { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px }
+  .sectionhead p { color:var(--dim); font-size:13px; margin:4px 0 0 }
+  .badge { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:3px 8px; color:var(--dim); font:11px "SFMono-Regular",monospace; white-space:nowrap }
+  .badge.before { color:var(--amber); border-color:#e5bf70; background:var(--amberbg) }
+  .record { display:grid; grid-template-columns:minmax(170px,.8fr) minmax(260px,1.4fr) auto; align-items:center; gap:16px; min-height:70px; border-top:1px solid var(--line); padding:12px 0 }
+  .record:first-of-type { border-top:0 }
+  .record label { font-weight:720; color:var(--navy) }
+  .value { color:var(--dim); font-size:13px }
+  .value strong { display:block; color:var(--navy); font-size:15px; overflow-wrap:anywhere }
+  .verified { color:var(--green); font-size:12px; margin-top:4px }
+  .upload { border:1px solid #b8c3d5; background:#fff; color:var(--navy2); border-radius:7px; padding:8px 12px; font-weight:650; font-size:12px }
+  .manualgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .manual { border:1px solid var(--line); border-radius:8px; padding:14px; background:#fafbfc }
+  .manual.full { grid-column:1/-1 }
+  .manual p { color:var(--amber); font-size:12px; margin:5px 0 10px }
+  input[type=file],textarea { width:100%; border:1px solid #c4ccda; border-radius:7px; padding:9px; background:#fff; color:var(--text) }
+  textarea { resize:vertical }
+  .action { display:flex; align-items:center; justify-content:space-between; gap:20px; background:var(--bluebg); color:var(--navy); border-color:#c8daf6 }
+  .action p { color:var(--dim); font-size:13px; margin:5px 0 0; max-width:600px }
+  .primary { border:0; border-radius:8px; background:var(--blue); color:#fff; padding:12px 18px; font-weight:800; white-space:nowrap; box-shadow:0 7px 16px #2563eb30 }
+  .primary:disabled { opacity:.55; cursor:wait }
+  .result { display:none }
+  .result.show { display:block }
+  .success { background:var(--greenbg); border-color:#91d6bd; color:var(--green) }
+  .failure { background:var(--redbg); border-color:#e5aaa5; color:var(--red) }
+  .architecture-card { padding:0; overflow:hidden; border-color:#bfd3f4 }
+  .architecture-card .sectionhead { margin:0; padding:18px 18px 8px }
+  .diagram-scroll { overflow-x:auto; padding:8px 18px 18px }
+  .system-diagram { display:block; width:100%; min-width:720px; height:auto; border:1px solid #d7e4f7; border-radius:10px; background:linear-gradient(145deg,#f9fbff,#eef4ff) }
+  .diagram-node { fill:#fff; stroke:#bdcff0; stroke-width:2 }
+  .diagram-permit { fill:#eef4ff; stroke:#78a0e9 }
+  .diagram-datamaster { fill:url(#datamasterGradient); stroke:#0b388b; stroke-width:2 }
+  .diagram-route { fill:none; stroke:#2563eb; stroke-width:3; marker-end:url(#arrowhead) }
+  .diagram-spine { fill:none; stroke:#8aace9; stroke-width:2 }
+  .diagram-label { fill:#0c2454; font-size:18px; font-weight:800 }
+  .diagram-label-small { fill:#0c2454; font-size:15px; font-weight:800 }
+  .diagram-detail { fill:#68758d; font-size:12px }
+  .diagram-on-blue { fill:#fff }
+  .diagram-kicker { fill:#2563eb; font-size:11px; font-weight:800; letter-spacing:1.3px }
+  .diagram-connection-label { fill:#48617f; font-size:11px; font-weight:700 }
+  .policy { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .policybox { border:1px solid var(--line); border-radius:8px; padding:13px }
+  .policybox strong { display:block; color:var(--navy); margin-bottom:5px }
+  .policybox span { color:var(--dim); font-size:12px }
+  details { border-top:1px solid var(--line); padding-top:13px; margin-top:15px }
+  summary { color:var(--blue); font-weight:700; cursor:pointer }
+  .trace { margin-top:12px }
+  .step { display:grid; grid-template-columns:26px 1fr auto; gap:9px; align-items:center; padding:8px 0; border-top:1px dashed var(--line); font-size:13px }
+  .step:first-child { border-top:0 }
+  .num { width:23px; height:23px; border-radius:50%; background:#e7edf5; display:grid; place-items:center; color:var(--navy); font-size:11px; font-weight:800 }
+  .ok { color:var(--green); font-weight:700 }
+  pre { white-space:pre-wrap; overflow:auto; font-size:11px; background:#101e34; color:#dfe8f6; border-radius:8px; padding:12px }
+  .note { color:var(--dim); font-size:12px; line-height:1.5 }
+  @media (max-width:700px) { .record{grid-template-columns:1fr}.manualgrid,.policy{grid-template-columns:1fr}.manual.full{grid-column:auto}.action,.context{grid-template-columns:1fr;display:grid}.action .primary{width:100%} }
+  @media (max-width:520px) { .head{align-items:flex-start;flex-direction:column;gap:12px}.header-meta{text-align:left}h1{font-size:22px} }
+  @media (prefers-reduced-motion:reduce) { * { transition:none!important } }
+</style>
+</head>
+<body>
+<header>
+  <div class="shell head">
+    <div><h1>BP Batam Logistics Business Permit — Demo</h1><div class="powered">Powered by DataMaster</div></div>
+    <div class="header-meta"><span class="demo">DEMONSTRATION</span><div style="margin-top:7px;font-size:12px"><a href="/">DataMaster console →</a></div></div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="card context">
+    <div><div class="company">PT Selat Niaga Makmur</div><p>Previously completed a BP Batam land-allocation workflow. Government records already contain verified company information submitted or checked in that earlier process.</p></div>
+    <span class="badge">IUK LOGISTIK</span>
+  </section>
+
+  <div class="architecture" aria-label="System request path"><b>Permit UI</b><span>→</span><b>stable POST /api/resolve</b><span>→</span><b>authoritative government sources</b></div>
+
+  <section class="card" id="recordsCard">
+    <div class="sectionhead"><div><h2>Repeated records this workflow asks for again</h2><p>Before DataMaster, the applicant acts as the courier between government workflows.</p></div><span class="badge before" id="recordState">BEFORE DATAMASTER</span></div>
+    <div id="records"></div>
+  </section>
+
+  <section class="card">
+    <div class="sectionhead"><div><h2>New information specific to this application</h2><p>DataMaster does not invent records the government does not already hold.</p></div><span class="badge before">MANUAL REQUIRED</span></div>
+    <div class="manualgrid">
+      <div class="manual"><h3>Warehouse control / ownership evidence</h3><p>Manual upload required</p><input type="file" aria-label="Warehouse control or ownership evidence"></div>
+      <div class="manual"><h3>Warehouse plan / layout</h3><p>Manual upload required</p><input type="file" aria-label="Warehouse plan or layout"></div>
+      <div class="manual full"><h3>Requested logistics activity / purpose</h3><p>New application information — enter manually</p><textarea rows="3" placeholder="Describe the requested warehousing or logistics activity"></textarea></div>
+    </div>
+  </section>
+
+  <section class="card action">
+    <div><h2 style="color:var(--navy);margin:0">Reuse records where integration and policy allow</h2><p>The request uses canonical concepts such as <code>business.nib</code>. The permit never needs to know OSS field names.</p></div>
+    <button class="primary" id="reuse">Reuse verified government records</button>
+  </section>
+
+  <section class="card result success" id="success" aria-live="polite">
+    <h2 style="color:var(--green)">Verified government records reused</h2>
+    <p style="margin-bottom:0">The repeated identity, business, tax, legal, and land fields now carry source provenance. The warehouse documents and new activity remain manual.</p>
+  </section>
+
+  <section class="card result architecture-card" id="architectureDiagram" aria-live="polite">
+    <div class="sectionhead">
+      <div>
+        <h2>How DataMaster sits between the permit and government services</h2>
+        <p id="architectureSummary">The permit sends one stable request to DataMaster, which applies policy and queries the required authoritative services.</p>
+      </div>
+      <span class="badge">VERIFIED PATH</span>
+    </div>
+    <div class="diagram-scroll">
+      <svg class="system-diagram" viewBox="0 0 1120 540" role="img" aria-labelledby="architectureTitle architectureDescription">
+        <title id="architectureTitle">DataMaster application architecture</title>
+        <desc id="architectureDescription">The BP Batam Business Permit sends a stable request to DataMaster. DataMaster authorizes, routes, adapts, and normalizes calls to Disdukcapil, OSS, DJP, AHU, and BP Batam LMS.</desc>
+        <defs>
+          <linearGradient id="datamasterGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2563eb" />
+            <stop offset="100%" stop-color="#103b8f" />
+          </linearGradient>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#2563eb" />
+          </marker>
+        </defs>
+
+        <text class="diagram-kicker" x="820" y="24">AUTHORITATIVE SERVICES QUERIED</text>
+
+        <rect class="diagram-node diagram-permit" x="35" y="203" width="225" height="134" rx="16" />
+        <text class="diagram-kicker" x="147.5" y="237" text-anchor="middle">CLIENT APPLICATION</text>
+        <text class="diagram-label" x="147.5" y="270" text-anchor="middle">BP Batam</text>
+        <text class="diagram-label" x="147.5" y="294" text-anchor="middle">Business Permit</text>
+        <text class="diagram-detail" x="147.5" y="319" text-anchor="middle">requests canonical fields</text>
+
+        <path class="diagram-route" d="M260 270 H372" />
+        <text class="diagram-connection-label" x="316" y="253" text-anchor="middle">POST /api/resolve</text>
+
+        <rect class="diagram-node diagram-datamaster" x="382" y="180" width="300" height="180" rx="20" />
+        <text class="diagram-kicker diagram-on-blue" x="532" y="220" text-anchor="middle">MIDDLE LAYER</text>
+        <text class="diagram-label diagram-on-blue" x="532" y="258" text-anchor="middle" style="font-size:28px">DataMaster</text>
+        <text class="diagram-detail diagram-on-blue" x="532" y="285" text-anchor="middle">Semantic integration control layer</text>
+        <text class="diagram-detail diagram-on-blue" x="532" y="316" text-anchor="middle">Authorize • Route • Adapt</text>
+        <text class="diagram-detail diagram-on-blue" x="532" y="337" text-anchor="middle">Normalize • Return provenance</text>
+
+        <path class="diagram-route" d="M682 270 H772" />
+        <path class="diagram-spine" d="M772 65 V475" />
+        <text class="diagram-connection-label" x="727" y="253" text-anchor="middle">approved calls</text>
+
+        <path class="diagram-route" d="M772 65 H812" />
+        <rect class="diagram-node" x="822" y="35" width="263" height="60" rx="12" />
+        <text class="diagram-label-small" x="842" y="61">Disdukcapil</text>
+        <text class="diagram-detail" x="842" y="80">Citizen identity and NIK</text>
+
+        <path class="diagram-route" d="M772 165 H812" />
+        <rect class="diagram-node" x="822" y="135" width="263" height="60" rx="12" />
+        <text class="diagram-label-small" x="842" y="161">OSS</text>
+        <text class="diagram-detail" x="842" y="180">Business registration and NIB</text>
+
+        <path class="diagram-route" d="M772 265 H812" />
+        <rect class="diagram-node" x="822" y="235" width="263" height="60" rx="12" />
+        <text class="diagram-label-small" x="842" y="261">DJP</text>
+        <text class="diagram-detail" x="842" y="280">Tax registration and NPWP</text>
+
+        <path class="diagram-route" d="M772 365 H812" />
+        <rect class="diagram-node" x="822" y="335" width="263" height="60" rx="12" />
+        <text class="diagram-label-small" x="842" y="361">AHU</text>
+        <text class="diagram-detail" x="842" y="380">Company legal records</text>
+
+        <path class="diagram-route" d="M772 465 H812" />
+        <rect class="diagram-node" x="822" y="435" width="263" height="60" rx="12" />
+        <text class="diagram-label-small" x="842" y="461">BP Batam LMS</text>
+        <text class="diagram-detail" x="842" y="480">Prior land-allocation records</text>
+
+        <rect x="382" y="388" width="300" height="58" rx="10" fill="#eaf8f2" stroke="#91d6bd" />
+        <text x="532" y="412" text-anchor="middle" fill="#087f5b" font-size="12" font-weight="800">STABLE RESPONSE + PROVENANCE</text>
+        <text x="532" y="431" text-anchor="middle" fill="#447263" font-size="11">upstream details stay behind DataMaster</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="card result failure" id="failure" aria-live="polite">
+    <h2 style="color:var(--red)">DataMaster stopped an unsafe automatic remap</h2>
+    <p id="failureText" style="margin-bottom:7px"></p><a href="/?tab=changes" style="color:var(--red);font-weight:750">Open Changes and review the OSS proposal →</a>
+  </section>
+
+  <section class="card result" id="resolution">
+    <div class="sectionhead"><div><h2>Purpose policy and provenance</h2><p>Authorization ran before any source call; the model is not the security boundary.</p></div><span class="badge" id="revision"></span></div>
+    <div class="policy">
+      <div class="policybox"><strong>Purpose policy: BP Batam logistics permit</strong><span>Allowed: business + identity + land<br>Blocked domain: health.*</span></div>
+      <div class="policybox"><strong class="ok">✓ SATUSEHAT was NOT queried</strong><span id="calledServices"></span></div>
+    </div>
+    <details>
+      <summary>How DataMaster resolved this</summary>
+      <div class="trace" id="trace"></div>
+    </details>
+    <details>
+      <summary>Inspect the unchanged stable request</summary>
+      <pre id="requestJson"></pre>
+      <p class="note">This exact request is sent before and after the OSS v1 → v2 contract change. Only the approved DataMaster adapter mapping changes.</p>
+    </details>
+  </section>
+</main>
+
+<script>
+const $ = selector => document.querySelector(selector);
+const esc = value => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
+const FIELD_ROWS = [
+  {concept:"business.nib", label:"NIB", upload:"Upload document"},
+  {concept:"business.npwp", label:"NPWP", upload:"Upload document"},
+  {concept:"business.company_deed", label:"Company deed / amendment", upload:"Upload document"},
+  {concept:"person.nik", label:"Director identity", upload:"Upload document"},
+  {concept:"business.company_name", label:"Registered company name", upload:"Upload evidence"},
+  {concept:"bpbatam.land_record", label:"Prior BP Batam land record", upload:"Upload document"}
+];
+const REQUEST = {
+  subject:{name:"John Doe",phone:"+62838292938"},
+  fields:[
+    "person.nik","business.nib","business.company_name","business.npwp",
+    "business.company_deed","bpbatam.land_record","application.warehouse_evidence",
+    "application.warehouse_plan","application.logistics_purpose"
+  ],
+  purpose:"bpbatam.iuk_logistik.application"
+};
+const SERVICE_LABELS = {dukcapil:"Disdukcapil",oss:"OSS",djp:"DJP",ahu:"AHU",bpbatam:"BP Batam LMS"};
+
+function renderBefore() {
+  $("#records").innerHTML = FIELD_ROWS.map(row => `<div class="record" data-concept="${row.concept}"><label>${row.label}</label><div class="value">Required again by this workflow</div><button class="upload" type="button">${row.upload}</button></div>`).join("");
+}
+function renderResolved(result) {
+  $("#records").innerHTML = FIELD_ROWS.map(row => {
+    const value = result.data[row.concept], source = result.provenance[row.concept];
+    return `<div class="record" data-concept="${row.concept}"><label>${row.label}</label><div class="value"><strong>${esc(value)}</strong><div class="verified">✓ Verified · ${esc(source.source)}${source.last_verified ? ` · ${esc(source.last_verified)}` : ""}</div></div><span class="badge" style="color:var(--green);border-color:#74c8aa">REUSED</span></div>`;
+  }).join("");
+  $("#recordState").className="badge"; $("#recordState").style.color="var(--green)"; $("#recordState").textContent="AFTER DATAMASTER";
+  $("#calledServices").textContent = `Queried: ${result.called_services.map(id => SERVICE_LABELS[id] || id).join(" · ")}`;
+  $("#architectureSummary").textContent = `This verification passed through DataMaster and queried ${result.called_services.map(id => SERVICE_LABELS[id] || id).join(", ")}.`;
+  $("#revision").textContent = `registry revision ${result.registry_revision}`;
+  $("#trace").innerHTML = result.trace.map(item => `<div class="step"><span class="num">${item.step}</span><span>${esc(item.operation)} → <strong>${esc(SERVICE_LABELS[item.service] || item.service)}</strong></span><span class="ok">HTTP ${item.status}</span></div>`).join("") + `<div class="step"><span class="num">✓</span><strong>SATUSEHAT was NOT queried</strong><span class="ok">policy enforced</span></div>`;
+  $("#success").classList.add("show"); $("#architectureDiagram").classList.add("show"); $("#failure").classList.remove("show"); $("#resolution").classList.add("show");
+}
+
+renderBefore();
+$("#requestJson").textContent = JSON.stringify(REQUEST,null,2);
+$("#reuse").onclick = async () => {
+  const button=$("#reuse"); button.disabled=true; button.textContent="Resolving authoritative records…";
+  try {
+    const response=await fetch("/api/resolve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(REQUEST)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){const detail=data.detail;throw new Error(typeof detail==="object" ? detail.message || JSON.stringify(detail) : detail || `HTTP ${response.status}`)}
+    renderResolved(data);
+  } catch(error) {
+    $("#failureText").textContent=error.message;
+    $("#failure").classList.add("show"); $("#success").classList.remove("show");
+    $("#architectureDiagram").classList.remove("show"); $("#resolution").classList.remove("show");
+  } finally { button.disabled=false; button.textContent="Reuse verified government records"; }
+};
+</script>
+</body>
+</html>

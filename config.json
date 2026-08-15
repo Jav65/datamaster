@@ -1,38 +1,29 @@
 {
   "apis": [
     {
-      "id": "ahu_getDeed",
-      "api": "${GOV_API_BASE}/ahu/getDeed",
+      "id": "dukcapil_getNIK",
+      "api": "http://localhost:9001/dukcapil/getNIK",
       "method": "GET",
-      "desc": "AHU (Ministry of Law) company registry. Given a NIK of a company founder/director, returns the deed of establishment (akta) number, SK Kemenkumham decree number, notary, and deed date. Use for legal-entity fields on permit forms.",
+      "desc": "Resolve a citizen identity. Given full name and phone number, returns the national ID number (NIK) and registered address. Call this FIRST when a query gives only name + phone \u2014 most other APIs need a NIK.",
       "params": [
         {
-          "name": "nik",
+          "name": "name",
           "type": "string",
           "required": true,
-          "desc": ""
-        }
-      ],
-      "returns": "unspecified"
-    },
-    {
-      "id": "bpbatam_getMasterlist",
-      "api": "${GOV_API_BASE}/bpbatam/getMasterlist",
-      "method": "GET",
-      "desc": "BP Batam free-trade-zone. Given a NIB, returns the approved duty-free import masterlist and land allocation (UWTO) status for that business.",
-      "params": [
+          "desc": "Full legal name"
+        },
         {
-          "name": "nib",
+          "name": "phone",
           "type": "string",
           "required": true,
-          "desc": ""
+          "desc": "Phone number incl. country code"
         }
       ],
-      "returns": "unspecified"
+      "returns": "nik, registered_address, dob"
     },
     {
       "id": "djp_getNPWP",
-      "api": "${GOV_API_BASE}/djp/getNPWP",
+      "api": "http://localhost:9001/djp/getNPWP",
       "method": "GET",
       "desc": "Tax authority (DJP). Given a NIK, returns the taxpayer number (NPWP) and the date it was last verified.",
       "params": [
@@ -40,50 +31,14 @@
           "name": "nik",
           "type": "string",
           "required": true,
-          "desc": ""
+          "desc": "16-digit national ID"
         }
       ],
-      "returns": "unspecified"
-    },
-    {
-      "id": "dukcapil_getNIK",
-      "api": "${GOV_API_BASE}/dukcapil/getNIK",
-      "method": "GET",
-      "desc": "Resolve a citizen identity. Given full name and phone number, returns the national ID number (NIK) and registered address. Call this FIRST when a query gives only name + phone — most other APIs need a NIK.",
-      "params": [
-        {
-          "name": "name",
-          "type": "string",
-          "required": true,
-          "desc": ""
-        },
-        {
-          "name": "phone",
-          "type": "string",
-          "required": true,
-          "desc": ""
-        }
-      ],
-      "returns": "unspecified"
-    },
-    {
-      "id": "oss_getNIB",
-      "api": "${GOV_API_BASE}/oss/getNIB",
-      "method": "GET",
-      "desc": "OSS national business licensing. Given a NIK of a company director, returns their registered business: NIB number, company name, KBLI activity codes, risk level.",
-      "params": [
-        {
-          "name": "nik",
-          "type": "string",
-          "required": true,
-          "desc": ""
-        }
-      ],
-      "returns": "unspecified"
+      "returns": "npwp, last_verified"
     },
     {
       "id": "satusehat_getHealth",
-      "api": "${GOV_API_BASE}/satusehat/getRecord",
+      "api": "http://localhost:9001/satusehat/getRecord",
       "method": "GET",
       "desc": "SATUSEHAT health exchange. Given a NIK, returns blood type, allergies, and details of the last medical checkup (facility, date, notes).",
       "params": [
@@ -91,10 +46,55 @@
           "name": "nik",
           "type": "string",
           "required": true,
-          "desc": ""
+          "desc": "16-digit national ID"
         }
       ],
-      "returns": "unspecified"
+      "returns": "blood_type, allergies, last_checkup{facility,date,notes}"
+    },
+    {
+      "id": "oss_getNIB",
+      "api": "http://localhost:9001/oss/getNIB",
+      "method": "GET",
+      "desc": "OSS national business licensing. Given a NIK of a company director, returns their registered business: NIB number, company name, KBLI activity codes, risk level.",
+      "params": [
+        {
+          "name": "nik",
+          "type": "string",
+          "required": true,
+          "desc": "Director's NIK"
+        }
+      ],
+      "returns": "nib, company_name, kbli, risk_level"
+    },
+    {
+      "id": "bpbatam_getMasterlist",
+      "api": "http://localhost:9001/bpbatam/getMasterlist",
+      "method": "GET",
+      "desc": "BP Batam free-trade-zone. Given a NIB, returns the approved duty-free import masterlist and land allocation (UWTO) status for that business.",
+      "params": [
+        {
+          "name": "nib",
+          "type": "string",
+          "required": true,
+          "desc": "13-digit business number"
+        }
+      ],
+      "returns": "masterlist_items[], uwto_status, plot"
+    },
+    {
+      "id": "ahu_getDeed",
+      "api": "http://localhost:9001/ahu/getDeed",
+      "method": "GET",
+      "desc": "AHU (Ministry of Law) company registry. Given a NIK of a company founder/director, returns the deed of establishment (akta) number, SK Kemenkumham decree number, notary, and deed date. Use for legal-entity fields on permit forms.",
+      "params": [
+        {
+          "name": "nik",
+          "type": "string",
+          "required": true,
+          "desc": "Director's 16-digit NIK"
+        }
+      ],
+      "returns": "deed_number, sk_kemenkumham, notary, deed_date, company_name"
     }
   ]
 }

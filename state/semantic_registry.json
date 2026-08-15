@@ -1,0 +1,133 @@
+{
+  "revision": 1,
+  "services": {
+    "dukcapil": {
+      "name": "Disdukcapil",
+      "status": "active",
+      "contract": "registered",
+      "operations": 1,
+      "hostname": "localhost:9001",
+      "apis": [
+        {
+          "endpoint": "/dukcapil/getNIK",
+          "method": "GET",
+          "description": "Resolve a citizen's NIK and registered identity details from their legal name and phone number."
+        }
+      ],
+      "concepts": ["person.nik"],
+      "dependents": ["bpbatam_iuk_logistik_demo"]
+    },
+    "oss": {
+      "name": "OSS",
+      "status": "active",
+      "contract": "OpenAPI 3.1",
+      "operations": 1,
+      "hostname": "localhost:9001",
+      "apis": [
+        {
+          "endpoint": "/oss/getNIB",
+          "method": "GET",
+          "description": "Retrieve a director's registered business, including its NIB, legal name, activity codes, and risk level."
+        }
+      ],
+      "concepts": ["business.nib", "business.company_name"],
+      "dependents": ["bpbatam_iuk_logistik_demo"]
+    },
+    "djp": {
+      "name": "DJP",
+      "status": "active",
+      "contract": "registered",
+      "operations": 1,
+      "hostname": "localhost:9001",
+      "apis": [
+        {
+          "endpoint": "/djp/getNPWP",
+          "method": "GET",
+          "description": "Retrieve a taxpayer registration number and its verification date from a citizen's NIK."
+        }
+      ],
+      "concepts": ["business.npwp"],
+      "dependents": ["bpbatam_iuk_logistik_demo"]
+    },
+    "ahu": {
+      "name": "AHU",
+      "status": "active",
+      "contract": "registered",
+      "operations": 1,
+      "hostname": "localhost:9001",
+      "apis": [
+        {
+          "endpoint": "/ahu/getDeed",
+          "method": "GET",
+          "description": "Retrieve a company's deed of establishment and related legal-entity records from a director's NIK."
+        }
+      ],
+      "concepts": ["business.company_deed"],
+      "dependents": ["bpbatam_iuk_logistik_demo"]
+    },
+    "bpbatam": {
+      "name": "BP Batam LMS",
+      "status": "active",
+      "contract": "registered",
+      "operations": 1,
+      "hostname": "localhost:9001",
+      "apis": [],
+      "documentation_status": "undocumented",
+      "concepts": ["bpbatam.land_record"],
+      "dependents": ["bpbatam_iuk_logistik_demo"]
+    }
+  },
+  "concepts": {
+    "person.nik": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "nik",
+      "last_verified": "2026-03-14"
+    },
+    "business.nib": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "nib",
+      "last_verified": "2026-03-14"
+    },
+    "business.company_name": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "company_name",
+      "last_verified": "2026-03-14"
+    },
+    "business.npwp": {
+      "authoritative_service": "djp",
+      "operation": "get_tax_registration",
+      "endpoint": "/djp/getNPWP",
+      "response_path": "npwp",
+      "last_verified_path": "last_verified"
+    },
+    "business.company_deed": {
+      "authoritative_service": "ahu",
+      "operation": "get_company_legal_record",
+      "endpoint": "/ahu/getDeed",
+      "response_path": "deed_number",
+      "last_verified": "2026-03-12"
+    },
+    "bpbatam.land_record": {
+      "authoritative_service": "bpbatam",
+      "operation": "get_prior_land_record",
+      "endpoint": "/bpbatam/getMasterlist",
+      "response_path": "plot",
+      "last_verified": "2026-03-10"
+    },
+    "application.warehouse_evidence": {
+      "manual": true
+    },
+    "application.warehouse_plan": {
+      "manual": true
+    },
+    "application.logistics_purpose": {
+      "manual": true
+    }
+  }
+}

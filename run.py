@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
 
 if __name__ == "__main__":
-    if not os.getenv("ANTHROPIC_API_KEY", "").startswith("sk-ant-"):
+    if not os.getenv("OPENAI_API_KEY", "").strip():
         raise SystemExit(
-            "ANTHROPIC_API_KEY missing or malformed.\n"
+            "OPENAI_API_KEY is missing.\n"
             "Copy .env.example to .env and fill it in."
         )
     host = os.getenv("HOST", "127.0.0.1")

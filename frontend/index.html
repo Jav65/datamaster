@@ -1,339 +1,424 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DataMaster</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataMaster — Government Integration Control Layer</title>
 <style>
-  :root{
-    --bg:#FFFFFF;
-    --surface:#F8FAFC;
-    --line:#E2E8F0;
-    --line-strong:#CBD5E1;
-    --text:#0F172A;
-    --muted:#64748B;
-    --blue:#1D4ED8;
-    --blue-hover:#1E40AF;
-    --blue-soft:#EFF6FF;
-    --blue-border:#BFDBFE;
-    --green:#047857;
-    --green-border:#A7F3D0;
-    --red:#DC2626;
-    --red-border:#FECACA;
-    --r:8px;
+  :root {
+    --canvas:#f5f8fd; --panel:#ffffff; --panel2:#f5f8ff; --line:#dce5f3;
+    --paper:#0c2454; --text:#17213a; --dim:#68758d; --gold:#2563eb;
+    --teal:#2563eb; --green:#16815d; --red:#c2413b; --blue:#2563eb;
+    --blue-dark:#103b8f; --blue-soft:#eaf2ff; --shadow:0 12px 32px #17458d12;
   }
-  *{box-sizing:border-box}
-  input[type=checkbox]{accent-color:var(--blue);width:auto}
-  html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
-    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
-  }
-  ::-webkit-scrollbar{width:10px;height:10px}
-  ::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px;border:3px solid var(--bg)}
-  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-  a{color:var(--blue)}
-
-  /* ---------- header ---------- */
-  header{border-bottom:1px solid var(--line);padding:20px 22px 0;background:var(--bg)}
-  .wrap{max-width:880px;margin:0 auto}
-  .masthead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-  h1{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin:0}
-  h1 span{color:var(--blue)}
-  .headmeta{display:flex;align-items:baseline;gap:16px;font-size:13px;color:var(--muted)}
-  .headmeta a{text-decoration:none;font-weight:500}
-  .headmeta a:hover{text-decoration:underline}
-
-  .tabs{display:flex;gap:24px}
-  .tab{
-    font-family:inherit;font-size:14px;font-weight:500;color:var(--muted);
-    background:none;border:none;border-bottom:2px solid transparent;
-    padding:0 0 10px;margin-bottom:-1px;cursor:pointer;
-  }
-  .tab:hover{color:var(--text)}
-  .tab.on{color:var(--blue);font-weight:600;border-bottom-color:var(--blue)}
-  .tab:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:3px}
-
-  main{max-width:880px;margin:0 auto;padding:24px 22px 72px}
-  .hint{font-size:13px;color:var(--muted)}
-  .sectionbar{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-  .sectionbar .hint{flex:1 1 320px}
-  .sectionbar-actions{display:flex;gap:8px;flex-shrink:0}
-  .hint b{color:var(--text);font-weight:600}
-
-  /* ---------- surfaces ---------- */
-  .card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
-
-  /* ---------- forms ---------- */
-  input,textarea,select,button{font-family:inherit}
-  input,textarea,select{
-    font-size:13px;color:var(--text);background:var(--bg);
-    border:1px solid var(--line-strong);border-radius:6px;padding:9px 11px;outline:none;
-    font-variant-numeric:tabular-nums;
-  }
-  input::placeholder,textarea::placeholder{color:#94A3B8}
-  input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft)}
-  textarea{resize:vertical;line-height:1.55}
-  .lbl{font-size:12px;font-weight:500;color:var(--muted);margin:12px 0 5px;display:block}
-
-  /* ---------- buttons ---------- */
-  button.primary{
-    font-size:13px;font-weight:600;color:#fff;background:var(--blue);
-    border:1px solid var(--blue);border-radius:6px;padding:9px 18px;cursor:pointer;
-  }
-  button.primary:hover{background:var(--blue-hover);border-color:var(--blue-hover)}
-  button.primary:disabled{background:var(--line-strong);border-color:var(--line-strong);cursor:wait}
-  button.ghost{
-    font-size:12px;font-weight:500;color:var(--blue);background:var(--bg);
-    border:1px solid var(--line-strong);border-radius:6px;padding:6px 12px;cursor:pointer;
-  }
-  button.ghost:hover{border-color:var(--blue);background:var(--blue-soft)}
-  button.danger{
-    font-size:12px;font-weight:500;color:var(--red);background:var(--bg);
-    border:1px solid var(--line-strong);border-radius:6px;padding:6px 12px;cursor:pointer;
-  }
-  button.danger:hover{border-color:var(--red);background:#FEF2F2}
-  button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-
-  /* ---------- bits ---------- */
-  .tag{
-    font-size:11px;font-weight:500;border-radius:4px;padding:2px 7px;
-    border:1px solid var(--line);color:var(--muted);background:var(--surface);
-    display:inline-block;margin:3px 4px 0 0;
-  }
-  .tag.blue{color:var(--blue);background:var(--blue-soft);border-color:var(--blue-border)}
-  .tag.green{color:var(--green);background:#ECFDF5;border-color:var(--green-border)}
-  .chip{
-    font-size:12px;font-weight:500;color:var(--text);background:var(--bg);
-    border:1px solid var(--line-strong);border-radius:999px;padding:5px 12px;cursor:pointer;
-  }
-  .chip:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
-  pre{
-    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;line-height:1.5;
-    background:var(--surface);border:1px solid var(--line);border-radius:6px;
-    padding:8px 11px;margin:7px 0 0;overflow-x:auto;white-space:pre-wrap;color:var(--text);
-  }
-
-  /* ---------- trace rail ---------- */
-  .rail{display:flex;gap:12px}
-  .dotcol{display:flex;flex-direction:column;align-items:center;width:22px}
-  .dot{width:9px;height:9px;border-radius:999px;margin-top:6px;flex-shrink:0}
-  .stem{width:2px;flex:1;background:var(--line);min-height:14px}
-  .final{background:var(--blue-soft);border:1px solid var(--blue-border);border-radius:var(--r);padding:12px 14px}
-  .final-hd{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:7px}
-
-  /* ---------- dialog ---------- */
-  dialog{
-    background:var(--bg);border:1px solid var(--line);border-radius:12px;
-    box-shadow:0 16px 48px rgba(15,23,42,.16);padding:22px;width:min(560px,92vw);color:var(--text);
-  }
-  dialog::backdrop{background:rgba(15,23,42,.4)}
-  .dlg-title{font-size:17px;font-weight:600;color:var(--text)}
-
-  .iogrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:620px){.iogrid{grid-template-columns:1fr}.tabs{gap:18px}}
-  @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--canvas); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif }
+  button,input,textarea { font:inherit }
+  button { cursor:pointer }
+  a { color:var(--teal) }
+  code,.mono,pre { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace }
+  .shell { max-width:1120px; margin:auto; padding:0 24px }
+  header { position:sticky; top:0; z-index:5; background:#ffffffee; backdrop-filter:blur(14px); border-bottom:1px solid var(--line); box-shadow:0 4px 18px #17458d0a }
+  .head { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-top:19px }
+  .brand { font-size:26px; font-weight:850; color:var(--blue-dark); letter-spacing:-.8px }
+  .brand span { color:var(--blue) }
+  .kicker { color:var(--dim); font:11px/1.4 "SFMono-Regular",monospace; letter-spacing:1.2px; text-transform:uppercase }
+  .tabs { display:flex; gap:3px; overflow-x:auto; padding-top:16px }
+  .tab { color:var(--dim); background:transparent; border:0; border-bottom:3px solid transparent; padding:11px 15px 12px; white-space:nowrap }
+  .tab:hover { color:var(--blue-dark); background:var(--blue-soft) }
+  .tab.on { color:var(--blue); border-bottom-color:var(--blue); font-weight:750 }
+  main { padding-top:34px; padding-bottom:72px }
+  h1,h2,h3,p { margin-top:0 }
+  h1 { color:var(--paper); font-size:42px; line-height:1.05; letter-spacing:-1.5px; max-width:800px; margin-bottom:14px }
+  h2 { color:var(--paper); font-size:22px; margin-bottom:14px }
+  h3 { color:var(--paper); font-size:15px; margin-bottom:7px }
+  .lede { max-width:780px; color:var(--dim); font-size:16px; line-height:1.6 }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:12px; box-shadow:var(--shadow) }
+  .card.soft { background:var(--panel2) }
+  .hero { padding:36px; background:linear-gradient(135deg,#ffffff 15%,#f4f8ff 70%,#e7f0ff); border-color:#cdddf5; position:relative; overflow:hidden }
+  .hero::after { content:""; position:absolute; width:260px; height:260px; right:-100px; top:-125px; border-radius:50%; background:#2563eb10; border:38px solid #2563eb0b; pointer-events:none }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px }
+  .grid3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px }
+  .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:24px 0 }
+  .stat { padding:17px; background:#fff; border:1px solid #cfe0f8; border-radius:10px; box-shadow:0 6px 18px #17458d0a }
+  .stat strong { display:block; font-size:27px; color:var(--blue) }
+  .stat span { color:var(--dim); font-size:12px }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:14px }
+  .wraprow { display:flex; align-items:center; gap:9px; flex-wrap:wrap }
+  .muted { color:var(--dim) }
+  .small { font-size:12px; line-height:1.5 }
+  .eyebrow { color:var(--blue); font:700 11px "SFMono-Regular",monospace; letter-spacing:1.3px; text-transform:uppercase; margin-bottom:8px }
+  .badge { display:inline-flex; align-items:center; border:1px solid var(--line); background:#fff; border-radius:999px; padding:3px 8px; color:var(--dim); font:11px "SFMono-Regular",monospace }
+  .badge.ok { color:var(--green); border-color:#a8dcc8; background:#effaf6 }
+  .badge.wait { color:#9a6500; border-color:#ead29b; background:#fff9e9 }
+  .badge.bad { color:var(--red); border-color:#edb8b4; background:#fff4f3 }
+  .btn { border:1px solid var(--line); border-radius:8px; color:var(--text); background:#fff; padding:9px 13px; font-weight:650 }
+  .btn:hover { border-color:var(--teal) }
+  .btn.primary { background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:0 7px 16px #2563eb30 }
+  .btn.primary:hover { background:var(--blue-dark); border-color:var(--blue-dark) }
+  .btn.teal { color:var(--blue); border-color:#a9c7f6; background:var(--blue-soft) }
+  .btn.danger { color:var(--red); border-color:#edb8b4; background:#fff }
+  .btn:disabled { opacity:.5; cursor:wait }
+  .list { display:grid; gap:8px }
+  .concept { display:grid; grid-template-columns:minmax(190px,1.2fr) minmax(130px,.7fr) minmax(180px,1fr); gap:12px; align-items:center; padding:10px 0; border-top:1px solid var(--line) }
+  .concept:first-child { border-top:0 }
+  pre { white-space:pre-wrap; overflow:auto; background:#102447; border:1px solid #233d68; border-radius:8px; padding:12px; font-size:11px; color:#e7efff; max-height:330px }
+  details { border-top:1px solid var(--line); padding-top:10px; margin-top:10px }
+  summary { color:var(--teal); cursor:pointer; font-size:13px }
+  .pipeline { display:grid; gap:6px; margin:12px 0 }
+  .pipe { display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:7px; background:var(--panel2); font-size:12px }
+  .pipe i { width:8px; height:8px; border-radius:50%; background:var(--green); flex:none }
+  .pipe.wait i { background:#d28a00 }
+  .diff { border-left:3px solid var(--line); padding-left:12px; margin:7px 0; font:12px/1.7 "SFMono-Regular",monospace }
+  .minus { color:var(--red) } .plus { color:var(--green) }
+  input,textarea { width:100%; color:var(--text); background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px 11px; outline:none }
+  input:focus,textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px #2563eb18 }
+  label { display:block; color:var(--dim); font-size:11px; margin-bottom:6px; letter-spacing:.7px; text-transform:uppercase }
+  .trace { min-height:180px }
+  .event { border-left:2px solid var(--line); padding:5px 0 12px 13px; font-size:12px }
+  .event.call { border-color:var(--blue) } .event.result { border-color:var(--green) } .event.error { border-color:var(--red) }
+  .notice { border-left:3px solid var(--blue); padding:11px 13px; background:var(--blue-soft); color:var(--dim); font-size:13px; line-height:1.55 }
+  .check { display:flex; align-items:flex-start; gap:11px }
+  .checkmark { color:var(--green); font-weight:800 }
+  .error { color:var(--red) }
+  .hidden { display:none!important }
+  .toast { position:fixed; right:20px; bottom:20px; max-width:420px; padding:12px 15px; border-radius:9px; background:#fff; border:1px solid var(--line); box-shadow:0 16px 50px #17335b2c; z-index:20 }
+  .service-intro { margin-bottom:24px }
+  .service-intro h2 { margin-bottom:0 }
+  .repository-connect { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 20px; margin-bottom:18px; border:1px solid #c9daf4; border-radius:14px; background:linear-gradient(135deg,#fff,#eef5ff); box-shadow:var(--shadow) }
+  .repository-copy { display:flex; align-items:flex-start; gap:13px; min-width:0 }
+  .repository-mark { display:grid; place-items:center; width:42px; height:42px; flex:none; border-radius:12px; color:#fff; background:var(--blue-dark); font-size:12px; font-weight:850; letter-spacing:.4px }
+  .repository-copy h3 { margin:0 0 5px; font-size:16px }
+  .repository-copy p { margin:0 0 7px; color:var(--dim); font-size:12px; line-height:1.5 }
+  .repository-state { display:block; margin-top:6px; color:var(--dim); font-size:11px }
+  dialog { width:min(560px,calc(100vw - 30px)); padding:0; color:var(--text); background:#fff; border:1px solid #c9daf4; border-radius:16px; box-shadow:0 24px 80px #10244740 }
+  dialog::backdrop { background:#10244780; backdrop-filter:blur(3px) }
+  .dialog-head { padding:22px 24px 15px; border-bottom:1px solid var(--line) }
+  .dialog-head h2 { margin:0 0 7px }
+  .dialog-head p { margin:0; color:var(--dim); font-size:13px; line-height:1.55 }
+  .dialog-body { padding:20px 24px 24px }
+  .dialog-help { margin:9px 0 0; color:var(--dim); font-size:11px; line-height:1.5 }
+  .dialog-error { min-height:18px; margin-top:10px; color:var(--red); font-size:12px; line-height:1.5 }
+  .dialog-actions { display:flex; justify-content:flex-end; gap:9px; margin-top:15px }
+  .service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px }
+  .service-card { background:#fff; border:1px solid #d4e0f1; border-radius:16px; padding:0; overflow:hidden; box-shadow:var(--shadow) }
+  .service-card__head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:20px 20px 16px }
+  .service-identity { display:flex; align-items:center; gap:12px; min-width:0 }
+  .service-mark { display:grid; place-items:center; width:40px; height:40px; flex:none; border-radius:11px; color:#fff; background:linear-gradient(145deg,var(--blue),var(--blue-dark)); font-size:13px; font-weight:850; letter-spacing:.3px; box-shadow:0 7px 16px #2563eb2b }
+  .service-card h3 { font-size:18px; margin:0 }
+  .service-meta { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:5px }
+  .service-host { display:flex; align-items:center; justify-content:space-between; gap:14px; margin:0 20px 18px; padding:11px 13px; border:1px solid #d7e5fa; border-radius:9px; background:var(--blue-soft) }
+  .service-host span { color:var(--dim); font-size:11px; font-weight:750; letter-spacing:.8px; text-transform:uppercase }
+  .service-host code { color:var(--blue-dark); font-size:12px; overflow-wrap:anywhere; text-align:right }
+  .api-section { border-top:1px solid var(--line); background:#fbfdff; padding:17px 20px 20px }
+  .api-section__head { display:flex; justify-content:space-between; gap:10px; margin-bottom:10px; color:var(--paper); font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase }
+  .api-count { color:var(--dim); font:11px "SFMono-Regular",monospace; font-weight:400; letter-spacing:0; text-transform:none }
+  .api-list { display:grid; gap:9px }
+  .api-item { padding:13px; border:1px solid var(--line); border-radius:10px; background:#fff }
+  .api-signature { display:flex; align-items:center; gap:9px; min-width:0 }
+  .api-method { display:inline-flex; flex:none; align-items:center; justify-content:center; min-width:45px; padding:4px 7px; border-radius:6px; color:#fff; background:var(--blue); font:800 10px "SFMono-Regular",monospace; letter-spacing:.4px }
+  .api-endpoint { color:var(--paper); font-size:12px; font-weight:700; overflow-wrap:anywhere }
+  .api-description { margin:9px 0 0 54px; color:var(--dim); font-size:12px; line-height:1.55 }
+  .service-foot { margin-top:11px; color:var(--dim); font-size:11px }
+  @media (max-width:800px) { .stats,.grid3 { grid-template-columns:repeat(2,1fr) } .concept { grid-template-columns:1fr } .repository-connect{align-items:stretch;flex-direction:column} .repository-connect .btn{width:100%} .service-grid{grid-template-columns:1fr} h1{font-size:34px} }
+  @media (max-width:560px) { .shell{padding:0 15px}.stats,.grid,.grid3{grid-template-columns:1fr}.head{align-items:flex-start}.kicker{display:none} }
+  @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; transition:none!important } }
 </style>
 </head>
 <body>
-<header><div class="wrap">
-  <div class="masthead">
-    <h1>Data<span>Master</span></h1>
-    <div class="headmeta">
-      <span id="kicker"></span>
+<header>
+  <div class="shell">
+    <div class="head">
+      <div><div class="brand">Data<span>Master</span></div><div class="kicker">Government integration control layer</div></div>
+      <button class="btn danger" id="reset">Reset demo</button>
     </div>
+    <nav class="tabs" aria-label="DataMaster console">
+      <button class="tab on" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="services">Services</button>
+      <button class="tab" data-tab="onboarding">Onboarding</button>
+      <button class="tab" data-tab="changes">Changes <span id="pendingBadge"></span></button>
+      <button class="tab" data-tab="playground">Playground</button>
+      <button class="tab" data-tab="tests">Tests</button>
+    </nav>
   </div>
-  <div class="tabs">
-    <button class="tab on" data-t="play">Playground</button>
-    <button class="tab" data-t="config">Config</button>
-  </div>
-</div></header>
+</header>
 
-<main>
-  <!-- ============ PLAYGROUND ============ -->
-  <section id="play">
-    <div id="chips" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-    <div class="iogrid">
-      <label><span class="lbl" style="margin-top:0">Input — subject, flexible key names</span>
-        <textarea id="q_input" rows="3" style="width:100%">{name: Budi, no: +62811770909}</textarea>
-      </label>
-      <label><span class="lbl" style="margin-top:0">Output — fields to return</span>
-        <textarea id="q_fields" rows="3" style="width:100%">{bloodType, allergies, lastCheckupDate}</textarea>
-      </label>
+<main class="shell">
+  <section id="overview" class="view">
+    <div class="card hero">
+      <div class="eyebrow">DataMaster</div>
+      <h1>Connect government records through one stable semantic layer.</h1>
+      <p class="lede">Discover constrained integrations for legacy services, reuse government-defined authoritative records, and maintain downstream stability when upstream APIs change. AI proposes; deterministic checks and humans decide.</p>
+      <div class="stats" id="stats"></div>
+      <div class="wraprow">
+        <a class="btn primary" href="/permit">Open logistics permit demo →</a>
+        <span class="badge" id="ossBadge">OSS version …</span>
+        <span class="badge" id="llmBadge">Semantic analyzer …</span>
+      </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-top:10px">
-      <button class="primary" id="run">Run</button>
-    </div>
-    <div class="card" id="trace" style="margin-top:16px;min-height:180px">
-      <span class="hint">Run a query to see the routing trace.</span>
+    <div class="grid">
+      <div class="card"><div class="eyebrow">Authoritative sources</div><div id="sourceList" class="list"></div></div>
+      <div class="card">
+        <div class="eyebrow">The distinction</div>
+        <h2>OpenAPI and DataMaster have different jobs.</h2>
+        <p class="muted">OpenAPI describes the contract of one HTTP API. DataMaster consumes contracts and maintains ecosystem state: ownership, canonical mappings, dependents, impact analysis, adapters, provenance, and approval history.</p>
+        <div class="notice">OpenAPI describes an API. DataMaster manages the dependency and integration lifecycle across many APIs.</div>
+      </div>
     </div>
   </section>
 
-  <!-- ============ CONFIG ============ -->
-  <section id="config" hidden>
-    <div class="sectionbar">
-      <div class="hint">Each entry becomes a tool. <b>The description is the routing logic</b> — write it for the agent.</div>
-      <div class="sectionbar-actions">
-        <button class="ghost" id="jsonToggle">View config.json</button>
-        <button class="primary" id="addApi">Add API</button>
+  <section id="services" class="view hidden">
+    <div class="service-intro"><h2>Government services and their APIs</h2></div>
+    <div class="repository-connect">
+      <div class="repository-copy">
+        <span class="repository-mark" aria-hidden="true">GH</span>
+        <div>
+          <h3>Connect a new service</h3>
+          <p>Inspect a public GitHub repository and generate grounded API documentation in this catalog.</p>
+          <span class="repository-state" id="repositoryState">Checking the repository analyzer…</span>
+        </div>
       </div>
+      <button class="btn primary" id="connectRepository">Connect GitHub repo</button>
     </div>
-    <div id="cfgList"></div>
-    <pre id="cfgJson" hidden style="max-height:420px;overflow:auto"></pre>
+    <div id="serviceList" class="service-grid"></div>
+  </section>
+
+  <section id="onboarding" class="view hidden">
+    <div class="eyebrow">Scene C · Legacy system onboarding</div>
+    <h2>Turn a useful internal function into a reviewable integration proposal.</h2>
+    <p class="lede">The fixture has deterministic land-allocation data and an internal Python repository function, but no public HTTP endpoint and no OpenAPI contract.</p>
+    <div class="card row">
+      <div><h3>Legacy BP Batam LMS fixture</h3><span class="badge bad">No public API</span> <span class="badge bad">No OpenAPI</span><p class="small muted" style="margin:8px 0 0">fixtures/legacy_lms/repository.py</p></div>
+      <button class="btn primary" id="scan">Scan codebase</button>
+    </div>
+    <div id="onboardingResult"></div>
+  </section>
+
+  <section id="changes" class="view hidden">
+    <div class="eyebrow">Scene D · Upstream contract change</div>
+    <h2>Detect impact, propose a semantic adapter update, then wait.</h2>
+    <p class="lede">The local button exercises the same internal pipeline as the signed GitHub webhook endpoint, so the live demo does not depend on internet access.</p>
+    <div class="card row">
+      <div><h3>OSS v1 → v2 merge</h3><p class="small muted" style="margin:0">Path and response field names change; the underlying government concepts do not.</p></div>
+      <button class="btn primary" id="simulate">Simulate upstream OSS merge</button>
+    </div>
+    <div id="changeResult"></div>
+  </section>
+
+  <section id="playground" class="view hidden">
+    <div class="eyebrow">OpenAI tool routing</div>
+    <h2>Inspect the flexible-query call trace.</h2>
+    <p class="lede">OpenAI maps flexible field names, selects the required government API tools, and returns the exact requested JSON fields. Every real tool call is shown below.</p>
+    <div class="grid card">
+      <div><label for="qInput">Subject — flexible key names</label><textarea id="qInput" rows="4">{name: John Doe, no: +62838292938}</textarea></div>
+      <div><label for="qFields">Requested output fields</label><textarea id="qFields" rows="4">{npwp, companyName, nib}</textarea></div>
+    </div>
+    <div class="row" style="margin:12px 0"><span id="playgroundStatus" class="small muted"></span><button class="btn primary" id="runQuery">Run query</button></div>
+    <div id="trace" class="card trace"><span class="muted small">Call events will appear here.</span></div>
+  </section>
+
+  <section id="tests" class="view hidden">
+    <div class="row"><div><div class="eyebrow">Deterministic acceptance suite</div><h2>Verify the judge path without touching live demo state.</h2></div><button class="btn primary" id="runTests">Run 12 checks</button></div>
+    <p class="lede">The backend copies the initial registry into a temporary directory, exercises policy, resolution, onboarding, diffing, approval, and OSS v2, then removes the copy. No LLM or internet is required.</p>
+    <div id="testSummary"></div><div id="testList" class="list"></div>
   </section>
 </main>
 
-<!-- ============ EDIT DIALOG ============ -->
-<dialog id="dlg">
-  <div class="dlg-title" id="dlgTitle">Register API</div>
-  <label><span class="lbl">ID (tool name)</span><input id="f_id" style="width:100%"></label>
-  <label><span class="lbl">Endpoint URL</span><input id="f_api" style="width:100%"></label>
-  <label><span class="lbl">Description — tell the agent when to use this</span><textarea id="f_desc" rows="3" style="width:100%"></textarea></label>
-  <label><span class="lbl">Returns</span><input id="f_ret" style="width:100%"></label>
-  <span class="lbl">Parameters</span>
-  <div id="f_params"></div>
-  <button class="ghost" id="addParam" style="border-style:dashed;margin:4px 0 14px">Add parameter</button>
-  <div id="f_err" style="color:var(--red);font-size:13px;margin-bottom:10px"></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end">
-    <button class="ghost" id="dlgCancel" style="color:var(--muted)">Cancel</button>
-    <button class="primary" id="dlgSave">Save</button>
-  </div>
+<dialog id="repositoryDialog" aria-labelledby="repositoryDialogTitle">
+  <form id="repositoryForm">
+    <div class="dialog-head">
+      <h2 id="repositoryDialogTitle">Connect a public GitHub repository</h2>
+      <p>DataMaster will clone the repository as read-only evidence, inspect likely API files with OpenAI, and add the validated result to Services.</p>
+    </div>
+    <div class="dialog-body">
+      <label for="repositoryInput">GitHub repository URL</label>
+      <input id="repositoryInput" name="repository_url" type="url" required autocomplete="url" spellcheck="false" placeholder="https://github.com/owner/repository">
+      <p class="dialog-help">Only public <code>github.com</code> repositories are accepted. The OpenAI key stays in the DataMaster server environment and is never sent to this browser.</p>
+      <div class="dialog-error" id="repositoryError" role="alert" aria-live="polite"></div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" id="cancelRepository">Cancel</button>
+        <button class="btn primary" type="submit" id="inspectRepository">Inspect repository</button>
+      </div>
+    </div>
+  </form>
 </dialog>
 
+<div id="toast" class="toast hidden" role="status"></div>
+
 <script>
-const $ = (s)=>document.querySelector(s);
-const esc = (s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let CONFIG = [];
-let editingIdx = null;
+const $ = (selector) => document.querySelector(selector);
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
+const json = value => esc(JSON.stringify(value, null, 2));
+let overviewState = null;
 
-/* ---------- tabs ---------- */
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
-  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===b));
-  ["play","config"].forEach(id=>$("#"+id).hidden = id!==b.dataset.t);
-});
-
-/* ---------- config ---------- */
-async function loadConfig(){
-  const r = await fetch("/api/config"); const d = await r.json();
-  CONFIG = d.apis; renderConfig();
+async function api(url, options = {}) {
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = data.detail;
+    const message = typeof detail === "object" ? detail.message || JSON.stringify(detail) : detail;
+    throw new Error(message || `HTTP ${response.status}`);
+  }
+  return data;
 }
-function renderConfig(){
-  $("#kicker").textContent = `${CONFIG.length} registered ${CONFIG.length===1?"agency":"agencies"}`;
-  $("#cfgJson").textContent = JSON.stringify({apis:CONFIG},null,2);
-  $("#cfgList").innerHTML = CONFIG.map((e,i)=>`
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div style="min-width:0">
-          <span class="mono" style="font-size:13px;color:var(--blue);font-weight:600">${esc(e.id)}</span>
-          <span class="mono" style="font-size:12px;color:var(--muted);word-break:break-all"> ${esc(e.api)}</span>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button class="ghost" onclick="openEdit(${i})">Edit</button>
-          <button class="danger" onclick="delApi(${i})">Delete</button>
+function post(url, body) {
+  return api(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body ?? {})});
+}
+function toast(message, bad = false) {
+  const element = $("#toast"); element.textContent = message; element.classList.remove("hidden");
+  element.style.borderColor = bad ? "var(--red)" : "var(--green)";
+  window.setTimeout(() => element.classList.add("hidden"), 3600);
+}
+function statusBadge(status) {
+  const kind = status === "applied" || status === "active" ? "ok" : status === "pending" ? "wait" : "bad";
+  return `<span class="badge ${kind}">${esc(status)}</span>`;
+}
+
+document.querySelectorAll(".tab").forEach(button => button.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(item => item.classList.toggle("on", item === button));
+  document.querySelectorAll(".view").forEach(view => view.classList.toggle("hidden", view.id !== button.dataset.tab));
+}));
+
+async function loadOverview() {
+  const data = await api("/api/overview"); overviewState = data;
+  const labels = {services:"Services connected", concepts:"Canonical concepts", consumers:"Active consumers", pending_reviews:"Pending reviews"};
+  $("#stats").innerHTML = Object.entries(data.counts).map(([key,value]) => `<div class="stat"><strong>${value}</strong><span>${labels[key]}</span></div>`).join("");
+  $("#ossBadge").textContent = `OSS upstream v${data.demo.oss_version} · registry r${data.registry_revision}`;
+  $("#llmBadge").textContent = data.llm_available ? "OpenAI query routing enabled" : "OpenAI query routing needs setup";
+  $("#pendingBadge").textContent = data.pending_changes ? `· ${data.pending_changes}` : "";
+  $("#playgroundStatus").textContent = data.llm_available ? "OpenAI Responses API ready." : "Set OPENAI_API_KEY on the DataMaster server to run queries.";
+}
+async function loadServices() {
+  const data = await api("/api/services");
+  const concepts = data.concepts;
+  const generatedServices = Object.values(data.services).filter(service => service.documentation_status === "generated_from_repository");
+  const analyzer = data.repository_connector;
+  const connectedSummary = generatedServices.length
+    ? `${generatedServices.length} repository service${generatedServices.length === 1 ? "" : "s"} connected`
+    : "No repository service connected yet";
+  $("#repositoryState").textContent = analyzer.openai_configured
+    ? `${connectedSummary} · OpenAI analyzer ready (${analyzer.model})`
+    : `${connectedSummary} · server setup required: OPENAI_API_KEY`;
+  const sourceRows = [
+    ["NIB","business.nib"],["NPWP","business.npwp"],["Company deed","business.company_deed"],["Director identity","person.nik"],["Land record","bpbatam.land_record"]
+  ];
+  $("#sourceList").innerHTML = sourceRows.map(([label,key]) => {
+    const item = concepts[key], service = data.services[item.authoritative_service];
+    return `<div class="row small"><span>${esc(label)}</span><span class="mono" style="color:var(--teal)">${esc(service.name)}</span></div>`;
+  }).join("");
+  $("#serviceList").innerHTML = Object.entries(data.services).filter(([,service]) => service.documentation_status !== "undocumented").map(([,service]) => {
+    const apis = service.apis || [];
+    const initials = service.name.split(/\s+/).map(word => word[0]).join("").slice(0, 3).toUpperCase();
+    return `<article class="service-card">
+      <div class="service-card__head">
+        <div class="service-identity">
+          <span class="service-mark" aria-hidden="true">${esc(initials)}</span>
+          <div><h3>${esc(service.name)}</h3>${service.contract !== "registered" ? `<div class="service-meta"><span class="badge">${esc(service.contract)}</span></div>` : ""}</div>
         </div>
       </div>
-      <div style="font-size:13px;margin:8px 0;color:var(--text)">${esc(e.desc)}</div>
-      <div>${(e.params||[]).map(p=>`<span class="tag blue">${esc(p.name)}: ${esc(p.type)}${p.required?"*":""}</span>`).join("")}
-      ${e.returns?`<span class="tag">→ ${esc(e.returns)}</span>`:""}</div>
-    </div>`).join("");
+      <div class="service-host"><span>Hostname</span><code>${esc(service.hostname || "Internal service")}</code></div>
+      <div class="api-section">
+        <div class="api-section__head"><span>APIs</span><span class="api-count">${apis.length} operation${apis.length === 1 ? "" : "s"}</span></div>
+        <div class="api-list">${apis.length ? apis.map(item => `<div class="api-item">
+          <div class="api-signature"><span class="api-method">${esc(item.method)}</span><code class="api-endpoint">${esc(item.endpoint)}</code></div>
+          <p class="api-description">${esc(item.description)}</p>
+        </div>`).join("") : `<div class="api-item"><p class="api-description" style="margin:0">No API operations registered.</p></div>`}</div>
+        ${(service.dependents||[]).length ? `<div class="service-foot">Used by BP Batam IUK Logistik Demo</div>` : ""}
+      </div>
+    </article>`;
+  }).join("");
 }
-async function persistConfig(){
-  const r = await fetch("/api/config",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({apis:CONFIG})});
-  if(!r.ok){ const d=await r.json(); alert("Config rejected: "+d.detail); }
-  loadConfig();
-}
-function delApi(i){ CONFIG.splice(i,1); persistConfig(); }
-$("#jsonToggle").onclick=()=>{
-  const showing = !$("#cfgJson").hidden;
-  $("#cfgJson").hidden = showing; $("#cfgList").hidden = !showing;
-  $("#jsonToggle").textContent = showing ? "View config.json" : "Table view";
+
+$("#connectRepository").onclick = () => {
+  $("#repositoryError").textContent = "";
+  $("#repositoryDialog").showModal();
+  window.setTimeout(() => $("#repositoryInput").focus(), 0);
+};
+$("#cancelRepository").onclick = () => $("#repositoryDialog").close();
+$("#repositoryForm").onsubmit = async event => {
+  event.preventDefault();
+  const button = $("#inspectRepository");
+  const repositoryUrl = $("#repositoryInput").value.trim();
+  $("#repositoryError").textContent = "";
+  button.disabled = true;
+  button.textContent = "Inspecting repository…";
+  try {
+    const result = await post("/api/repositories/connect", {repository_url: repositoryUrl});
+    await Promise.all([loadOverview(), loadServices()]);
+    $("#repositoryDialog").close();
+    $("#repositoryForm").reset();
+    toast(`${result.service.name} added with ${result.evidence.length} documented API${result.evidence.length === 1 ? "" : "s"}.`);
+  } catch (error) {
+    $("#repositoryError").textContent = error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Inspect repository";
+  }
 };
 
-/* ---------- edit dialog ---------- */
-function paramRow(p={name:"",type:"string",required:false,desc:""}){
-  const div=document.createElement("div");
-  div.style.cssText="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap";
-  div.innerHTML=`<input class="pn" placeholder="name" style="width:110px;font-size:12px" value="${esc(p.name)}">
-    <select class="pt" style="font-size:12px"><option${p.type!=="number"?" selected":""}>string</option><option${p.type==="number"?" selected":""}>number</option></select>
-    <input class="pd" placeholder="description" style="flex:1;min-width:120px;font-size:12px" value="${esc(p.desc)}">
-    <label style="font-size:12px;color:var(--muted)"><input type="checkbox" class="pr" ${p.required?"checked":""}> req</label>
-    <button class="danger" style="border:none;padding:4px 8px" onclick="this.parentElement.remove()">✕</button>`;
-  return div;
+function renderOnboarding(proposal) {
+  if (!proposal) { $("#onboardingResult").innerHTML = ""; return; }
+  const selected = proposal.scan.selected_operation;
+  const params = selected.parameters.map(item => `${item.name}: ${item.annotation || "unknown"}`).join(", ");
+  $("#onboardingResult").innerHTML = `<div class="card">
+    <div class="row"><div><div class="eyebrow">Integration proposal</div><h2>${esc(proposal.title)}</h2></div>${statusBadge(proposal.status)}</div>
+    <div class="grid3">
+      <div class="card soft"><h3>1 · AST discovery</h3><p class="small muted">Parser: ${esc(proposal.scan.parser)}<br>Selected: <code>${esc(selected.name)}(${esc(params)})</code><br>Return: <code>${esc(selected.return_annotation)}</code><br>Source line: ${selected.line}</p></div>
+      <div class="card soft"><h3>2 · Generated artifacts</h3><p class="small muted">Constrained adapter<br>OpenAPI 3.1 proposal<br>Docs derived from OpenAPI<br>Proposed registry entry</p></div>
+      <div class="card soft"><h3>3 · Safety gate</h3><p class="small muted">${esc(proposal.safety)}</p></div>
+    </div>
+    <div class="pipeline">${proposal.checks.map(item => `<div class="pipe"><i></i><span>${esc(item.name)}</span><span class="badge ok">passed</span></div>`).join("")}<div class="pipe ${proposal.status === "pending" ? "wait" : ""}"><i></i><span>Human approval</span><span class="badge ${proposal.status === "pending" ? "wait" : "ok"}">${proposal.status === "pending" ? "waiting" : "approved"}</span></div></div>
+    <details><summary>Review generated adapter</summary><pre>${json(proposal.adapter)}</pre></details>
+    <details><summary>Review generated OpenAPI</summary><pre>${json(proposal.openapi)}</pre></details>
+    <details><summary>Review docs derived from OpenAPI</summary><pre>${esc(proposal.docs_preview)}</pre></details>
+    ${proposal.status === "pending" ? `<div class="row" style="margin-top:16px"><span class="small muted">Nothing is active until this approval.</span><button class="btn primary" onclick="approveOnboarding('${esc(proposal.id)}')">Approve integration</button></div>` : `<div class="notice" style="margin-top:14px">✓ Adapter tests passed · registry activated · generated files persisted<br>${(proposal.generated_files||[]).map(esc).join(" · ")}</div>`}
+  </div>`;
 }
-function openEdit(i){
-  editingIdx = i;
-  const e = i===null ? {id:"",api:"",desc:"",returns:"",params:[{name:"",type:"string",required:true,desc:""}]} : CONFIG[i];
-  $("#dlgTitle").textContent = i===null?"Register API":"Edit API";
-  $("#f_id").value=e.id; $("#f_api").value=e.api; $("#f_desc").value=e.desc; $("#f_ret").value=e.returns||"";
-  $("#f_params").innerHTML=""; (e.params||[]).forEach(p=>$("#f_params").appendChild(paramRow(p)));
-  $("#f_err").textContent="";
-  $("#dlg").showModal();
+async function loadOnboarding() { const data = await api("/api/onboarding"); renderOnboarding(data.proposals.at(-1)); }
+$("#scan").onclick = async () => { const button=$("#scan"); button.disabled=true; button.textContent="Scanning…"; try{renderOnboarding(await post("/api/onboarding/scan"));await loadOverview();toast("Real AST scan completed; proposal is waiting for review.");}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Scan codebase"} };
+window.approveOnboarding = async id => { try{renderOnboarding(await post(`/api/onboarding/${encodeURIComponent(id)}/approve`));await Promise.all([loadOverview(),loadServices()]);toast("Integration approved after deterministic checks.");}catch(error){toast(error.message,true)} };
+
+function renderChange(proposal) {
+  if (!proposal) { $("#changeResult").innerHTML = ""; return; }
+  const diff = proposal.diff;
+  const removed = [...diff.removed_paths.map(item => `${item.method} ${item.path}`), ...diff.removed_response_fields.map(item => `response.${item}`)];
+  const added = [...diff.added_paths.map(item => `${item.method} ${item.path}`), ...diff.added_response_fields.map(item => `response.${item}`)];
+  $("#changeResult").innerHTML = `<div class="card">
+    <div class="row"><div><div class="eyebrow">Commit ${esc(proposal.commit)}</div><h2>${esc(proposal.title)}</h2><span class="badge">${esc(proposal.source)}</span> <span class="badge">${esc(proposal.analysis.mode)}</span></div>${statusBadge(proposal.status)}</div>
+    <div class="grid" style="margin-top:15px"><div class="card soft"><h3 class="minus">Breaking changes</h3><div class="diff">${removed.map(item => `<div class="minus">− ${esc(item)}</div>`).join("")}</div></div><div class="card soft"><h3 class="plus">New contract</h3><div class="diff">${added.map(item => `<div class="plus">+ ${esc(item)}</div>`).join("")}</div></div></div>
+    <div class="grid"><div class="card soft"><h3>Affected DataMaster concepts</h3>${proposal.affected_concepts.map(item => `<div><code>${esc(item)}</code></div>`).join("")}</div><div class="card soft"><h3>Affected consumers</h3>${proposal.affected_consumers.map(item => `<div>${esc(item.name)}</div>`).join("")}</div></div>
+    <h3 style="margin-top:16px">Proposed semantic mappings</h3>
+    <div class="list">${proposal.mappings.map(item => `<div class="card soft row"><div><code>${esc(item.concept)}</code><div class="small muted"><span class="minus">${esc(item.old_field)}</span> → <span class="plus">${esc(item.new_field)}</span> · ${item.confidence == null ? "reviewer edited" : Math.round(item.confidence*100)+"% confidence"}</div><div class="small muted">${esc(item.reason)}</div></div>${proposal.status === "pending" ? `<button class="btn" onclick="editMapping('${esc(proposal.id)}','${esc(item.concept)}','${esc(item.new_field)}')">Edit mapping</button>` : ""}</div>`).join("")}</div>
+    <div class="pipeline">${proposal.pipeline.map(item => `<div class="pipe ${item.status === "waiting" ? "wait" : ""}"><i></i><span>${esc(item.name)}</span><span class="badge ${item.status === "waiting" ? "wait" : "ok"}">${esc(item.status)}</span><span class="muted">${esc(item.actor)}</span></div>`).join("")}</div>
+    ${proposal.tests ? `<div class="notice">${proposal.tests.map(item => `${item.passed ? "✓" : "✕"} ${esc(item.name)}`).join("<br>")}<br>✓ DataMaster stable contract unchanged · registry revision ${proposal.registry_revision}</div>` : ""}
+    ${proposal.status === "pending" ? `<div class="row" style="margin-top:16px"><button class="btn danger" onclick="rejectChange('${esc(proposal.id)}')">Reject</button><div class="wraprow"><a class="btn" href="/permit">Observe degraded permit</a><button class="btn primary" onclick="approveChange('${esc(proposal.id)}')">Approve &amp; test</button></div></div>` : proposal.status === "applied" ? `<div class="row" style="margin-top:16px"><span class="small muted">The permit client still requests <code>business.nib</code>.</span><a class="btn primary" href="/permit">Prove permit still works →</a></div>` : ""}
+  </div>`;
 }
-$("#addApi").onclick=()=>openEdit(null);
-$("#addParam").onclick=()=>$("#f_params").appendChild(paramRow());
-$("#dlgCancel").onclick=()=>$("#dlg").close();
-$("#dlgSave").onclick=()=>{
-  const entry={
-    id:$("#f_id").value.trim(), api:$("#f_api").value.trim(),
-    method:"GET", desc:$("#f_desc").value.trim(), returns:$("#f_ret").value.trim(),
-    params:[...$("#f_params").children].map(r=>({
-      name:r.querySelector(".pn").value.trim(), type:r.querySelector(".pt").value,
-      required:r.querySelector(".pr").checked, desc:r.querySelector(".pd").value.trim(),
-    })).filter(p=>p.name),
-  };
-  if(!entry.id||!entry.api||!entry.desc){ $("#f_err").textContent="ID, endpoint URL and description are required — the description is what the agent routes on."; return; }
-  if(editingIdx===null && CONFIG.some(c=>c.id===entry.id)){ $("#f_err").textContent="That ID already exists."; return; }
-  if(editingIdx===null) CONFIG.push(entry); else CONFIG[editingIdx]=entry;
-  $("#dlg").close(); persistConfig();
-};
+async function loadChanges() { const data=await api("/api/changes"); renderChange(data.changes.at(-1)); }
+$("#simulate").onclick = async () => { const button=$("#simulate");button.disabled=true;button.textContent="Diffing…";try{renderChange(await post("/api/changes/simulate-oss-v2"));await loadOverview();toast("OSS v2 detected. Registry is still on the last approved mapping.");}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Simulate upstream OSS merge"} };
+window.editMapping = async (id,concept,current) => { const next=window.prompt(`New upstream field for ${concept}`,current); if(!next||next===current)return; try{const proposal=await api(`/api/changes/${encodeURIComponent(id)}/mapping`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({concept,new_field:next})});renderChange(proposal);toast("Mapping edited; it is still pending.");}catch(error){toast(error.message,true)} };
+window.approveChange = async id => { try{renderChange(await post(`/api/changes/${encodeURIComponent(id)}/approve`));await Promise.all([loadOverview(),loadServices()]);toast("Contract tests passed; OSS v2 adapter is active.");}catch(error){await loadChanges();toast(error.message,true)} };
+window.rejectChange = async id => { try{renderChange(await post(`/api/changes/${encodeURIComponent(id)}/reject`));await loadOverview();toast("Proposal rejected; no registry mapping changed.");}catch(error){toast(error.message,true)} };
 
-/* ---------- playground (SSE) ---------- */
-const SAMPLES=[
-  {label:"npwp + blood type — John",   input:"{name: John Doe, no: +62838292938}",  fields:"{npwp, npwpLastVerified, bloodType}"},
-  {label:"business check — Siti",      input:"{nama: Siti Rahma, hp: +628117701234}", fields:"{ownsBusiness, companyName, riskLevel}"},
-  {label:"3-hop: masterlist — John",   input:"{name: John Doe, phone: +62838292938}", fields:"{companyName, masterlist, uwtoStatus, plot}"},
-  {label:"health — Budi",              input:"{name: Budi, no: +62811770909}",       fields:"{bloodType, allergies, lastCheckupDate}"},
-];
-$("#chips").innerHTML=SAMPLES.map((s,i)=>`<button class="chip" data-i="${i}">${esc(s.label)}</button>`).join("");
-document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
-  const s=SAMPLES[+c.dataset.i]; $("#q_input").value=s.input; $("#q_fields").value=s.fields;
-});
+let events = [];
+function renderTrace() { $("#trace").innerHTML = events.map(event => {
+  if(event.type==="call") return `<div class="event call"><b>→ ${esc(event.tool)}</b><div class="muted mono">${esc(event.api)}</div><pre>${json(event.args)}</pre></div>`;
+  if(event.type==="result") return `<div class="event result"><b>← HTTP ${event.status} · ${event.ms} ms</b><pre>${json(event.body)}</pre></div>`;
+  if(event.type==="final") return `<div class="event"><b>Stable JSON answer</b><pre>${json(event.json || event.raw)}</pre></div>`;
+  if(event.type==="error") return `<div class="event error error">${esc(event.text)}</div>`;
+  return `<div class="event muted">Agent reasoning round ${Number(event.round)+1}</div>`;
+  }).join("") || '<span class="muted small">Call events will appear here.</span>'; }
+$("#runQuery").onclick = () => { const button=$("#runQuery");events=[];renderTrace();button.disabled=true;button.textContent="Routing…";const source=new EventSource(`/api/query/stream?input=${encodeURIComponent($("#qInput").value)}&fields=${encodeURIComponent($("#qFields").value)}`);source.onmessage=message=>{events.push(JSON.parse(message.data));renderTrace()};source.addEventListener("done",()=>{source.close();button.disabled=false;button.textContent="Run query"});source.onerror=()=>{source.close();button.disabled=false;button.textContent="Run query"}; };
 
-function traceRow(ev, isLast){
-  let dot="var(--line-strong)", body="";
-  if(ev.type==="thinking"){ body=`<div style="font-size:13px;color:var(--muted)">Round ${ev.round+1} — deciding which APIs answer this…</div>`; }
-  if(ev.type==="call"){ dot="var(--blue)";
-    body=`<div style="font-size:13px">→ <b class="mono" style="color:var(--blue)">${esc(ev.tool)}</b></div>
-      <div class="mono" style="font-size:12px;color:var(--muted);word-break:break-all">${esc(ev.api)}</div>
-      <pre>${esc(JSON.stringify(ev.args,null,1))}</pre>`; }
-  if(ev.type==="result"){ dot = ev.status===200?"var(--green)":"var(--red)";
-    body=`<div style="font-size:13px;color:${ev.status===200?"var(--green)":"var(--red)"}">← ${ev.status} · ${ev.ms} ms</div>
-      <pre style="border-color:${ev.status===200?"var(--green-border)":"var(--red-border)"}">${esc(JSON.stringify(ev.body,null,1))}</pre>`; }
-  if(ev.type==="final"){ dot="var(--blue)";
-    const content = ev.json
-      ? `<pre style="border:none;background:transparent;padding:0;font-size:13px">${esc(JSON.stringify(ev.json,null,2))}</pre>`
-      : `<div style="color:var(--red);font-size:13px">Parse error: ${esc(ev.parse_error||"unknown")}</div><pre>${esc(ev.raw||"")}</pre>`;
-    body=`<div class="final"><div class="final-hd">JSON answer</div>${content}</div>`; }
-  if(ev.type==="error"){ dot="var(--red)"; body=`<div style="font-size:13px;color:var(--red)">✕ ${esc(ev.text)}</div>`; }
-  return `<div class="rail"><div class="dotcol"><div class="dot" style="background:${dot}"></div>${isLast?"":'<div class="stem"></div>'}</div>
-    <div style="padding-bottom:16px;flex:1;min-width:0">${body}</div></div>`;
-}
-let EVENTS=[];
-function renderTrace(){ $("#trace").innerHTML = EVENTS.map((e,i)=>traceRow(e,i===EVENTS.length-1)).join(""); }
-$("#run").onclick=()=>{
-  EVENTS=[]; renderTrace(); $("#run").disabled=true; $("#run").textContent="Routing…";
-  const u = "/api/query/stream?input="+encodeURIComponent($("#q_input").value)+"&fields="+encodeURIComponent($("#q_fields").value);
-  const es = new EventSource(u);
-  es.onmessage=(m)=>{ EVENTS.push(JSON.parse(m.data)); renderTrace(); };
-  es.addEventListener("done",()=>{ es.close(); $("#run").disabled=false; $("#run").textContent="Run"; });
-  es.onerror=()=>{ es.close(); $("#run").disabled=false; $("#run").textContent="Run"; };
-};
+$("#runTests").onclick = async () => { const button=$("#runTests");button.disabled=true;button.textContent="Checking…";try{const data=await post("/api/demo/tests");$("#testSummary").innerHTML=`<div class="notice" style="margin-bottom:12px">${data.passed}/${data.total} passed · isolated temporary state · no LLM required</div>`;$("#testList").innerHTML=data.results.map(item=>`<div class="card check"><div class="checkmark">${item.passed ? "✓" : "✕"}</div><div><h3>${esc(item.name)}</h3><div class="small muted">${esc(item.evidence)}</div></div></div>`).join("");toast(`${data.passed}/${data.total} deterministic checks passed.`,data.passed!==data.total);}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Run 12 checks"} };
 
-loadConfig();
+$("#reset").onclick = async () => { if(!window.confirm("Restore OSS v1, registry revision 1, and clear all proposals?")) return; try{await post("/api/demo/reset",{actor:"console_reviewer"});await Promise.all([loadOverview(),loadServices(),loadOnboarding(),loadChanges()]);$("#testSummary").innerHTML="";$("#testList").innerHTML="";toast("Demo restored to the known initial state.");}catch(error){toast(error.message,true)} };
+
+const requestedTab = new URLSearchParams(window.location.search).get("tab");
+const allowedTabs = ["overview","services","onboarding","changes","playground","tests"];
+const requestedButton = allowedTabs.includes(requestedTab) && document.querySelector(`.tab[data-tab="${requestedTab}"]`);
+if (requestedButton) requestedButton.click();
+Promise.all([loadOverview(),loadServices(),loadOnboarding(),loadChanges()]).catch(error => toast(error.message,true));
 </script>
 </body>
 </html>
