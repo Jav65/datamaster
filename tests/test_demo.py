@@ -16,6 +16,7 @@ import httpx
 
 from app.change_manager import approve_change, detect_oss_v2_change
 from app.contract_diff import diff_openapi, load_contract
+from app.demo_resident_records import register_demo_resident
 from app.github_webhook import parse_oss_contract_event, verify_signature
 from app.mock_gov import government_response
 from app.onboarding import (
@@ -309,6 +310,79 @@ class DataMasterDemoTests(unittest.TestCase):
         )
         with self.assertRaises(RepositoryScanError):
             normalize_repository_url("https://example.com/owner/repository")
+
+    def test_13_disdukcapil_registration_unlocks_permit_sections_a_and_b(self):
+        subject = {"name": "Ayu Lestari", "phone": "+6281212345678"}
+        fields = [
+            "person.nik",
+            "person.date_of_birth",
+            "person.registered_address",
+            "person.email",
+            "business.npwp",
+            "business.company_name",
+            "business.nib",
+            "business.company_deed",
+            "business.sk_kemenkumham",
+            "business.notary",
+            "business.risk_level",
+            "business.kbli",
+        ]
+
+        with self.assertRaises(ResolutionError):
+            resolve(
+                subject,
+                fields,
+                PERMIT_PURPOSE,
+                store=self.store,
+                requester=self.requester,
+            )
+
+        register_demo_resident(
+            {
+                "name": subject["name"],
+                "phone": subject["phone"],
+                "nik": "2171024504900004",
+                "dob": "1990-04-05",
+                "registered_address": "Jl. Raja Haji Fisabilillah No. 18, Batam Center",
+                "email": "ayu.lestari@samudramaju.co.id",
+                "npwp": "73.456.789.0-217.000",
+                "company_name": "PT Samudra Maju Logistik",
+                "nib": "1308260098765",
+                "deed_number": "AHU-0067421.AH.01.01.2026",
+                "sk_kemenkumham": "AHU-0067421.AH.01.01.TAHUN 2026",
+                "notary": "Dewi Anggraini, S.H., M.Kn. (Batam)",
+                "risk_level": "Medium-Low",
+                "kbli": ["52101 — Warehousing", "52291 — Freight forwarding"],
+            },
+            store=self.store,
+        )
+
+        result = resolve(
+            subject,
+            fields,
+            PERMIT_PURPOSE,
+            store=self.store,
+            requester=self.requester,
+        )
+
+        self.assertEqual(result["called_services"], ["dukcapil", "oss", "djp", "ahu"])
+        self.assertEqual(result["data"]["person.nik"], "2171024504900004")
+        self.assertEqual(result["data"]["person.email"], "ayu.lestari@samudramaju.co.id")
+        self.assertEqual(result["data"]["business.nib"], "1308260098765")
+        self.assertEqual(
+            result["data"]["business.kbli"],
+            ["52101 — Warehousing", "52291 — Freight forwarding"],
+        )
+
+        self.store.reset("unittest")
+        with self.assertRaises(ResolutionError):
+            resolve(
+                subject,
+                fields,
+                PERMIT_PURPOSE,
+                store=self.store,
+                requester=self.requester,
+            )
 
 
 if __name__ == "__main__":

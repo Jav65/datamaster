@@ -1,5 +1,5 @@
 {
-  "revision": 1,
+  "revision": 4,
   "services": {
     "dukcapil": {
       "name": "Disdukcapil",
@@ -14,8 +14,15 @@
           "description": "Resolve a citizen's NIK and registered identity details from their legal name and phone number."
         }
       ],
-      "concepts": ["person.nik"],
-      "dependents": ["bpbatam_iuk_logistik_demo"]
+      "concepts": [
+        "person.nik",
+        "person.date_of_birth",
+        "person.registered_address",
+        "person.email"
+      ],
+      "dependents": [
+        "bpbatam_iuk_logistik_demo"
+      ]
     },
     "oss": {
       "name": "OSS",
@@ -30,8 +37,15 @@
           "description": "Retrieve a director's registered business, including its NIB, legal name, activity codes, and risk level."
         }
       ],
-      "concepts": ["business.nib", "business.company_name"],
-      "dependents": ["bpbatam_iuk_logistik_demo"]
+      "concepts": [
+        "business.nib",
+        "business.company_name",
+        "business.kbli",
+        "business.risk_level"
+      ],
+      "dependents": [
+        "bpbatam_iuk_logistik_demo"
+      ]
     },
     "djp": {
       "name": "DJP",
@@ -46,8 +60,12 @@
           "description": "Retrieve a taxpayer registration number and its verification date from a citizen's NIK."
         }
       ],
-      "concepts": ["business.npwp"],
-      "dependents": ["bpbatam_iuk_logistik_demo"]
+      "concepts": [
+        "business.npwp"
+      ],
+      "dependents": [
+        "bpbatam_iuk_logistik_demo"
+      ]
     },
     "ahu": {
       "name": "AHU",
@@ -62,8 +80,14 @@
           "description": "Retrieve a company's deed of establishment and related legal-entity records from a director's NIK."
         }
       ],
-      "concepts": ["business.company_deed"],
-      "dependents": ["bpbatam_iuk_logistik_demo"]
+      "concepts": [
+        "business.company_deed",
+        "business.sk_kemenkumham",
+        "business.notary"
+      ],
+      "dependents": [
+        "bpbatam_iuk_logistik_demo"
+      ]
     },
     "bpbatam": {
       "name": "BP Batam LMS",
@@ -73,8 +97,100 @@
       "hostname": "localhost:9001",
       "apis": [],
       "documentation_status": "undocumented",
-      "concepts": ["bpbatam.land_record"],
-      "dependents": ["bpbatam_iuk_logistik_demo"]
+      "concepts": [
+        "bpbatam.land_record"
+      ],
+      "dependents": [
+        "bpbatam_iuk_logistik_demo"
+      ]
+    },
+    "github_alexgeraldhandoko_bp_batam": {
+      "name": "BP Batam",
+      "description": "Dummy BP Batam service exposing land allocation records, import masterlists, UWTO payment status, and permit prerequisite validation.",
+      "status": "active",
+      "contract": "AI-generated repository documentation",
+      "operations": 4,
+      "hostname": "api.bpbatam.local",
+      "apis": [
+        {
+          "method": "GET",
+          "endpoint": "/api/v1/land-records/{nib}",
+          "description": "Retrieves the active BP Batam land-allocation record associated with a business NIB; returns 404 when no record is found.",
+          "source_files": [
+            "src/bp_batam_api/main.py"
+          ]
+        },
+        {
+          "method": "GET",
+          "endpoint": "/api/v1/masterlis/{nib}",
+          "description": "Retrieves the approved duty-free import masterlist and annual quotas for a business NIB; returns 404 when none is found.",
+          "source_files": [
+            "src/bp_batam_api/main.py"
+          ]
+        },
+        {
+          "method": "GET",
+          "endpoint": "/api/v1/uwto/{nib}/status",
+          "description": "Retrieves the current UWTO payment status for a BP Batam land holder identified by NIB; returns 404 when none is found.",
+          "source_files": [
+            "src/bp_batam_api/main.py"
+          ]
+        },
+        {
+          "method": "POST",
+          "endpoint": "/api/v1/permit-validations",
+          "description": "Validates whether a business activity and warehouse plot satisfy known BP Batam permit prerequisites.",
+          "source_files": [
+            "src/bp_batam_api/main.py"
+          ]
+        }
+      ],
+      "documentation_status": "generated_from_repository",
+      "source_repository": "https://github.com/alexgeraldhandoko/bp-batam",
+      "repository_commit": "8ec602215695c46e63cbc97185408e2e2e73926b",
+      "repository_fingerprint": "91514050e7462d81c4742569",
+      "files_scanned": [
+        "tests/test_api.py",
+        "src/bp_batam_api/__init__.py",
+        "src/bp_batam_api/main.py",
+        "src/bp_batam_api/models.py",
+        "src/bp_batam_api/repository.py",
+        "README.md",
+        "pyproject.toml",
+        ".github/workflows/tests.yml"
+      ],
+      "characters_scanned": 8213,
+      "analysis_mode": "openai_structured_outputs",
+      "analysis_model": "gpt-5.6",
+      "repository_access": "remote_github_clone",
+      "last_scanned": "2026-08-15T20:18:42.685589+00:00",
+      "concepts": [],
+      "dependents": [],
+      "last_documentation_change": {
+        "status": "applied",
+        "detected_at": "2026-08-15T20:18:42.684501+00:00",
+        "before_commit": "20c7b18334fe83d890f1c85a28e37d9f8c6712cc",
+        "after_commit": "8ec602215695c46e63cbc97185408e2e2e73926b",
+        "changed_files": [
+          "src/bp_batam_api/main.py"
+        ],
+        "omitted_files": 0,
+        "diff_truncated": false,
+        "added_operations": [
+          {
+            "method": "GET",
+            "endpoint": "/api/v1/masterlis/{nib}"
+          }
+        ],
+        "removed_operations": [
+          {
+            "method": "GET",
+            "endpoint": "/api/v1/masterlists/{nib}"
+          }
+        ],
+        "changed_operations": [],
+        "changed_metadata": []
+      }
     }
   },
   "concepts": {
@@ -83,6 +199,27 @@
       "operation": "resolve_director_identity",
       "endpoint": "/dukcapil/getNIK",
       "response_path": "nik",
+      "last_verified": "2026-03-14"
+    },
+    "person.date_of_birth": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "dob",
+      "last_verified": "2026-03-14"
+    },
+    "person.registered_address": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "registered_address",
+      "last_verified": "2026-03-14"
+    },
+    "person.email": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "email",
       "last_verified": "2026-03-14"
     },
     "business.nib": {
@@ -99,6 +236,20 @@
       "response_path": "company_name",
       "last_verified": "2026-03-14"
     },
+    "business.kbli": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "kbli",
+      "last_verified": "2026-03-14"
+    },
+    "business.risk_level": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "risk_level",
+      "last_verified": "2026-03-14"
+    },
     "business.npwp": {
       "authoritative_service": "djp",
       "operation": "get_tax_registration",
@@ -111,6 +262,20 @@
       "operation": "get_company_legal_record",
       "endpoint": "/ahu/getDeed",
       "response_path": "deed_number",
+      "last_verified": "2026-03-12"
+    },
+    "business.sk_kemenkumham": {
+      "authoritative_service": "ahu",
+      "operation": "get_company_legal_record",
+      "endpoint": "/ahu/getDeed",
+      "response_path": "sk_kemenkumham",
+      "last_verified": "2026-03-12"
+    },
+    "business.notary": {
+      "authoritative_service": "ahu",
+      "operation": "get_company_legal_record",
+      "endpoint": "/ahu/getDeed",
+      "response_path": "notary",
       "last_verified": "2026-03-12"
     },
     "bpbatam.land_record": {

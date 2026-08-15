@@ -14,7 +14,12 @@
           "description": "Resolve a citizen's NIK and registered identity details from their legal name and phone number."
         }
       ],
-      "concepts": ["person.nik"],
+      "concepts": [
+        "person.nik",
+        "person.date_of_birth",
+        "person.registered_address",
+        "person.email"
+      ],
       "dependents": ["bpbatam_iuk_logistik_demo"]
     },
     "oss": {
@@ -30,7 +35,12 @@
           "description": "Retrieve a director's registered business, including its NIB, legal name, activity codes, and risk level."
         }
       ],
-      "concepts": ["business.nib", "business.company_name"],
+      "concepts": [
+        "business.nib",
+        "business.company_name",
+        "business.kbli",
+        "business.risk_level"
+      ],
       "dependents": ["bpbatam_iuk_logistik_demo"]
     },
     "djp": {
@@ -62,7 +72,11 @@
           "description": "Retrieve a company's deed of establishment and related legal-entity records from a director's NIK."
         }
       ],
-      "concepts": ["business.company_deed"],
+      "concepts": [
+        "business.company_deed",
+        "business.sk_kemenkumham",
+        "business.notary"
+      ],
       "dependents": ["bpbatam_iuk_logistik_demo"]
     },
     "bpbatam": {
@@ -85,6 +99,27 @@
       "response_path": "nik",
       "last_verified": "2026-03-14"
     },
+    "person.date_of_birth": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "dob",
+      "last_verified": "2026-03-14"
+    },
+    "person.registered_address": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "registered_address",
+      "last_verified": "2026-03-14"
+    },
+    "person.email": {
+      "authoritative_service": "dukcapil",
+      "operation": "resolve_director_identity",
+      "endpoint": "/dukcapil/getNIK",
+      "response_path": "email",
+      "last_verified": "2026-03-14"
+    },
     "business.nib": {
       "authoritative_service": "oss",
       "operation": "get_business_by_director",
@@ -99,6 +134,20 @@
       "response_path": "company_name",
       "last_verified": "2026-03-14"
     },
+    "business.kbli": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "kbli",
+      "last_verified": "2026-03-14"
+    },
+    "business.risk_level": {
+      "authoritative_service": "oss",
+      "operation": "get_business_by_director",
+      "endpoint": "/oss/getNIB",
+      "response_path": "risk_level",
+      "last_verified": "2026-03-14"
+    },
     "business.npwp": {
       "authoritative_service": "djp",
       "operation": "get_tax_registration",
@@ -111,6 +160,20 @@
       "operation": "get_company_legal_record",
       "endpoint": "/ahu/getDeed",
       "response_path": "deed_number",
+      "last_verified": "2026-03-12"
+    },
+    "business.sk_kemenkumham": {
+      "authoritative_service": "ahu",
+      "operation": "get_company_legal_record",
+      "endpoint": "/ahu/getDeed",
+      "response_path": "sk_kemenkumham",
+      "last_verified": "2026-03-12"
+    },
+    "business.notary": {
+      "authoritative_service": "ahu",
+      "operation": "get_company_legal_record",
+      "endpoint": "/ahu/getDeed",
+      "response_path": "notary",
       "last_verified": "2026-03-12"
     },
     "bpbatam.land_record": {

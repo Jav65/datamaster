@@ -13,6 +13,7 @@ import json
 import os
 import queue
 import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -39,6 +40,7 @@ from app.change_manager import (
     reject_change,
 )
 from app.demo_checks import run_demo_checks
+from app.demo_resident_records import register_demo_resident
 from app.github_webhook import WebhookError, parse_oss_contract_event, verify_signature
 from app.onboarding import (
     OnboardingError,
@@ -53,10 +55,19 @@ from app.repository_scanner import (
     RepositoryScanError,
     connect_repository,
 )
+from app.repository_monitor import REPOSITORY_MONITOR
 from app.resolver import ResolutionError, resolve
 from app.state_store import STORE
 
-app = FastAPI(title="DataMaster")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    REPOSITORY_MONITOR.start()
+    yield
+    REPOSITORY_MONITOR.close()
+
+
+app = FastAPI(title="DataMaster", lifespan=lifespan)
 
 FRONTEND = Path(__file__).resolve().parent.parent / "frontend" / "index.html"
 
@@ -113,6 +124,23 @@ class RepositoryConnectIn(BaseModel):
     repository_url: str = Field(min_length=1, max_length=500)
 
 
+class DisdukcapilRecordIn(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    phone: str = Field(pattern=r"^\+?[0-9]{9,15}$")
+    nik: str = Field(pattern=r"^[0-9]{16}$")
+    dob: str = Field(pattern=r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+    registered_address: str = Field(min_length=5, max_length=300)
+    email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=200)
+    npwp: str = Field(min_length=5, max_length=40)
+    company_name: str = Field(min_length=2, max_length=200)
+    nib: str = Field(pattern=r"^[0-9]{13}$")
+    deed_number: str = Field(min_length=3, max_length=120)
+    sk_kemenkumham: str = Field(min_length=3, max_length=160)
+    notary: str = Field(min_length=3, max_length=160)
+    risk_level: str = Field(min_length=2, max_length=80)
+    kbli: list[str] = Field(min_length=1, max_length=8)
+
+
 # ---------- frontend ----------
 
 @app.get("/")
@@ -123,6 +151,11 @@ def index():
 @app.get("/permit")
 def permit_page():
     return FileResponse(FRONTEND.parent / "permit.html")
+
+
+@app.get("/disdukcapil")
+def disdukcapil_page():
+    return FileResponse(FRONTEND.parent / "disdukcapil.html")
 
 
 # ---------- config CRUD ----------
@@ -183,6 +216,24 @@ def post_resolve(body: ResolveIn):
         ) from exc
 
 
+@app.post("/api/disdukcapil/records", status_code=201)
+def create_disdukcapil_record(body: DisdukcapilRecordIn):
+    """Save one local demo registration used by the mock authoritative APIs."""
+
+    record = register_demo_resident(body.model_dump())
+    return {
+        "ok": True,
+        "message": "Resident and legal-entity data registered for the demo.",
+        "record": {
+            "name": record["name"],
+            "phone": record["phone"],
+            "nik": record["nik"],
+            "nib": record["nib"],
+            "registered_at": record["registered_at"],
+        },
+    }
+
+
 # ---------- control-layer read models ----------
 
 @app.get("/api/overview")
@@ -229,6 +280,7 @@ def services():
             "openai_configured": bool(os.environ.get("OPENAI_API_KEY", "").strip()),
             "model": os.environ.get("OPENAI_REPOSITORY_MODEL", DEFAULT_OPENAI_MODEL),
         },
+        "repository_monitor": REPOSITORY_MONITOR.status(),
     }
 
 
@@ -245,6 +297,17 @@ def connect_public_repository(body: RepositoryConnectIn):
 def connect_legacy_repository_route(body: RepositoryConnectIn):
     """Keep stale browser tabs functional while they refresh to the generic UI."""
     return connect_public_repository(body)
+
+
+@app.get("/api/repositories/monitor")
+def repository_monitor_status():
+    return REPOSITORY_MONITOR.status()
+
+
+@app.post("/api/repositories/monitor")
+def inspect_repositories_now():
+    """Queue a full documentation inspection independently of the current SHA."""
+    return REPOSITORY_MONITOR.request_inspection()
 
 
 # ---------- human-reviewed legacy onboarding ----------

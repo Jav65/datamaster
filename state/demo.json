@@ -1,4 +1,34 @@
 {
   "oss_version": 1,
-  "last_reset_by": "console_reviewer"
+  "last_reset_by": "console_reviewer",
+  "disdukcapil_records": [
+    {
+      "name": "ayu lestari",
+      "phone": "+6281212345678",
+      "nik": "2171024504900004",
+      "dob": "1990-04-05",
+      "registered_address": "Jl. Raja Haji Fisabilillah No. 18, Batam Center",
+      "email": "ayu.lestari@samudramaju.co.id",
+      "npwp": "73.456.789.0-217.000",
+      "company_name": "PT Samudra Maju Logistik",
+      "nib": "1308260098765",
+      "deed_number": "AHU-0067421.AH.01.01.2026",
+      "sk_kemenkumham": "AHU-0067421.AH.01.01.TAHUN 2026",
+      "notary": "Dewi Anggraini, S.H., M.Kn. (Batam)",
+      "risk_level": "Medium-Low",
+      "kbli": [
+        "52101 \u2014 Warehousing",
+        "52291 \u2014 Freight forwarding"
+      ],
+      "npwp_last_verified": "2026-08-15",
+      "deed_date": null,
+      "blood_type": null,
+      "allergies": [],
+      "last_checkup": null,
+      "masterlist": [],
+      "uwto_status": null,
+      "plot": null,
+      "registered_at": "2026-08-15T20:22:41.694742+00:00"
+    }
+  ]
 }

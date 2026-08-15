@@ -84,3 +84,4 @@ def validate_permit(body: PermitValidationRequest) -> PermitValidationResult:
         checks=checks,
         reason="Known prerequisites matched" if eligible else "One or more prerequisites did not match",
     )
+

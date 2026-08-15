@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disdukcapil registration — DataMaster demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1558b0;--blue-dark:#0d3f82;--blue-soft:#eef5ff;
+    --ink:#1c2f46;--muted:#65758b;--line:#cbd5e1;--field:#fafbfc;
+    --ok:#1b7a43;--ok-soft:#eaf6ee;--err:#c62828;--err-soft:#fdecec;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f7fb;color:#202b38;font-family:'Nunito Sans',system-ui,sans-serif;font-size:15px;line-height:1.5}
+  .stripe{height:5px;background:var(--blue)}
+  header{background:#fff;border-bottom:1px solid #dce4ed;padding:18px 24px}
+  .header-inner,.page{width:min(980px,calc(100% - 32px));margin:auto}
+  .header-inner{display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{display:grid;place-items:center;width:42px;height:42px;border-radius:9px;background:var(--blue);color:#fff;font-weight:800}
+  .brand strong{display:block;color:var(--ink);font-size:18px}
+  .brand span{display:block;color:var(--muted);font-size:12px}
+  a{color:var(--blue);font-weight:800;text-decoration:none}
+  a:hover{text-decoration:underline}
+  .page{padding:34px 0 60px}
+  .intro{margin-bottom:24px}
+  .eyebrow{display:inline-block;margin-bottom:8px;padding:3px 10px;border-radius:999px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.7px}
+  h1{margin:0 0 8px;color:var(--ink);font-size:30px;line-height:1.2}
+  .intro p{max-width:760px;margin:0;color:var(--muted)}
+  fieldset{margin:0 0 22px;padding:22px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 8px 26px rgba(34,65,103,.06)}
+  legend{padding:0 10px;color:var(--ink);font-size:18px;font-weight:800}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .full{grid-column:1/-1}
+  label{color:var(--ink);font-weight:700}
+  input,textarea,select,button{font:inherit}
+  input,textarea,select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--field);color:#202b38;outline:none}
+  input:focus,textarea:focus,select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,88,176,.13)}
+  textarea{resize:vertical}
+  .help{color:var(--muted);font-size:12px}
+  .actions{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  button{padding:12px 24px;border:1px solid var(--blue);border-radius:8px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}
+  button:hover{background:var(--blue-dark)}
+  button:disabled{opacity:.55;cursor:wait}
+  #status{min-height:24px;color:var(--muted)}
+  #status.error{padding:10px 12px;border:1px solid #f1b7b7;border-radius:8px;background:var(--err-soft);color:var(--err)}
+  #status.success{padding:10px 12px;border:1px solid #bfe3cd;border-radius:8px;background:var(--ok-soft);color:var(--ok);font-weight:700}
+  dialog{width:min(500px,calc(100% - 32px));padding:26px;border:1px solid var(--line);border-radius:14px;color:#202b38;box-shadow:0 24px 70px rgba(28,47,70,.25)}
+  dialog::backdrop{background:rgba(28,47,70,.45)}
+  dialog h2{margin:0 0 8px;color:var(--ink)}
+  dialog p{margin:0 0 20px;color:var(--muted)}
+  .continue{display:inline-block;padding:11px 18px;border-radius:8px;background:var(--blue);color:#fff}
+  .continue:hover{background:var(--blue-dark);text-decoration:none}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.header-inner{align-items:flex-start;flex-direction:column}h1{font-size:25px}.actions button{width:100%}}
+</style>
+</head>
+<body>
+<div class="stripe"></div>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">DK</div>
+      <div><strong>Disdukcapil registration</strong><span>Resident and legal-entity profile demo</span></div>
+    </div>
+    <a href="/permit">Back to permit application</a>
+  </div>
+</header>
+
+<main class="page">
+  <div class="intro">
+    <span class="eyebrow">Demo registration</span>
+    <h1>Register reusable applicant data</h1>
+    <p>Submit Sections A and B here. DataMaster can then retrieve the matching records for the permit using the same full name and phone number. The sample values are prefilled to keep the demo short.</p>
+  </div>
+
+  <form id="registrationForm">
+    <fieldset>
+      <legend>A · Applicant (Pemohon)</legend>
+      <div class="grid">
+        <div class="field"><label for="name">Full name</label><input id="name" name="name" value="Ayu Lestari" required></div>
+        <div class="field"><label for="phone">Phone</label><input id="phone" name="phone" value="+6281212345678" inputmode="tel" required></div>
+        <div class="field"><label for="nik">NIK</label><input id="nik" name="nik" value="2171024504900004" inputmode="numeric" minlength="16" maxlength="16" required></div>
+        <div class="field"><label for="dob">Date of birth</label><input id="dob" name="dob" type="date" value="1990-04-05" required></div>
+        <div class="field full"><label for="registered_address">Registered address (Alamat KTP)</label><input id="registered_address" name="registered_address" value="Jl. Raja Haji Fisabilillah No. 18, Batam Center" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" value="ayu.lestari@samudramaju.co.id" required></div>
+        <div class="field"><label for="npwp">NPWP</label><input id="npwp" name="npwp" value="73.456.789.0-217.000" required></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>B · Legal entity (Badan usaha)</legend>
+      <div class="grid">
+        <div class="field"><label for="company_name">Company name</label><input id="company_name" name="company_name" value="PT Samudra Maju Logistik" required></div>
+        <div class="field"><label for="nib">NIB</label><input id="nib" name="nib" value="1308260098765" inputmode="numeric" minlength="13" maxlength="13" required></div>
+        <div class="field"><label for="deed_number">Deed number (No. akta)</label><input id="deed_number" name="deed_number" value="AHU-0067421.AH.01.01.2026" required></div>
+        <div class="field"><label for="sk_kemenkumham">SK Kemenkumham</label><input id="sk_kemenkumham" name="sk_kemenkumham" value="AHU-0067421.AH.01.01.TAHUN 2026" required></div>
+        <div class="field"><label for="notary">Notary</label><input id="notary" name="notary" value="Dewi Anggraini, S.H., M.Kn. (Batam)" required></div>
+        <div class="field"><label for="risk_level">Risk level (OSS)</label><select id="risk_level" name="risk_level" required><option>Low</option><option selected>Medium-Low</option><option>Medium-High</option><option>High</option></select></div>
+        <div class="field full">
+          <label for="kbli">KBLI activity codes</label>
+          <textarea id="kbli" name="kbli" rows="2" required>52101 — Warehousing; 52291 — Freight forwarding</textarea>
+          <span class="help">Separate multiple activity codes with semicolons.</span>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <div id="status" role="status" aria-live="polite">Submitting this form creates a local demo record. Reset service removes it.</div>
+      <button id="submitRegistration" type="submit">Submit registration</button>
+    </div>
+  </form>
+</main>
+
+<dialog id="successDialog">
+  <h2>Registration submitted</h2>
+  <p>The matching mock agency records are now available. Return to the permit and retrieve data using the same name and phone.</p>
+  <a class="continue" id="continuePermit" href="/permit">Continue to permit</a>
+</dialog>
+
+<script>
+const INJECTED = "__DATAMASTER_API_BASE__";
+const API_BASE = (
+  new URLSearchParams(location.search).get("api")
+  || (INJECTED.startsWith("__") ? "" : INJECTED)
+).replace(/\/$/, "");
+
+const form = document.querySelector("#registrationForm");
+const button = document.querySelector("#submitRegistration");
+const status = document.querySelector("#status");
+
+function errorMessage(payload, fallback){
+  const detail = payload && payload.detail;
+  if(typeof detail === "string") return detail;
+  if(detail && typeof detail.message === "string") return detail.message;
+  if(Array.isArray(detail)) return detail.map(item => item.msg).join("; ");
+  return fallback;
+}
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  if(!form.reportValidity()) return;
+  button.disabled = true;
+  button.textContent = "Submitting…";
+  status.className = "";
+  status.textContent = "Saving the demo registration…";
+
+  const values = Object.fromEntries(new FormData(form).entries());
+  const payload = {
+    ...values,
+    kbli: values.kbli.split(";").map(item => item.trim()).filter(Boolean),
+  };
+
+  try{
+    const response = await fetch(`${API_BASE}/api/disdukcapil/records`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+    if(!response.ok) throw new Error(errorMessage(result, `Registration failed with HTTP ${response.status}`));
+
+    status.className = "success";
+    status.textContent = "Registration saved. DataMaster can now retrieve Sections A and B.";
+    const query = new URLSearchParams({name: values.name, phone: values.phone});
+    document.querySelector("#continuePermit").href = `/permit?${query}`;
+    document.querySelector("#successDialog").showModal();
+  }catch(error){
+    status.className = "error";
+    status.textContent = error.message;
+  }finally{
+    button.disabled = false;
+    button.textContent = "Submit registration";
+  }
+});
+</script>
+</body>
+</html>

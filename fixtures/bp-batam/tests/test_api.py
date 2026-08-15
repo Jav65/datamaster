@@ -30,3 +30,4 @@ def test_permit_validation_checks_known_plot() -> None:
     )
     assert response.status_code == 200
     assert response.json()["eligible"] is True
+

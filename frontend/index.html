@@ -17,7 +17,7 @@
   button { cursor:pointer }
   a { color:var(--teal) }
   code,.mono,pre { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace }
-  .shell { max-width:1120px; margin:auto; padding:0 24px }
+  .shell { max-width:1120px; margin:auto; padding:24px }
   header { position:sticky; top:0; z-index:5; background:#ffffffee; backdrop-filter:blur(14px); border-bottom:1px solid var(--line); box-shadow:0 4px 18px #17458d0a }
   .head { display:flex; align-items:center; justify-content:space-between; gap:20px; padding-top:19px }
   .head-actions { display:flex; align-items:center; gap:9px; flex-wrap:wrap; justify-content:flex-end }
@@ -92,6 +92,7 @@
   .repository-copy h3 { margin:0 0 5px; font-size:16px }
   .repository-copy p { margin:0 0 7px; color:var(--dim); font-size:12px; line-height:1.5 }
   .repository-state { display:block; margin-top:6px; color:var(--dim); font-size:11px }
+  .repository-buttons { display:flex; align-items:center; gap:10px; flex:none }
   dialog { width:min(560px,calc(100vw - 30px)); padding:0; color:var(--text); background:#fff; border:1px solid #c9daf4; border-radius:16px; box-shadow:0 24px 80px #10244740 }
   dialog::backdrop { background:#10244780; backdrop-filter:blur(3px) }
   .dialog-head { padding:22px 24px 15px; border-bottom:1px solid var(--line) }
@@ -120,8 +121,12 @@
   .api-method { display:inline-flex; flex:none; align-items:center; justify-content:center; min-width:45px; padding:4px 7px; border-radius:6px; color:#fff; background:var(--blue); font:800 10px "SFMono-Regular",monospace; letter-spacing:.4px }
   .api-endpoint { color:var(--paper); font-size:12px; font-weight:700; overflow-wrap:anywhere }
   .api-description { margin:9px 0 0 54px; color:var(--dim); font-size:12px; line-height:1.55 }
+  .service-repository { margin:0 20px 18px; padding:12px 13px; border:1px solid #d7e5fa; border-radius:9px; background:#f8fbff; color:var(--dim); font-size:11px; line-height:1.55 }
+  .service-repository a { display:block; overflow-wrap:anywhere; font-family:"SFMono-Regular",Consolas,monospace; font-size:11px }
+  .repository-change { margin-top:9px; padding-top:9px; border-top:1px solid var(--line) }
+  .repository-change strong { color:var(--green) }
   .service-foot { margin-top:11px; color:var(--dim); font-size:11px }
-  @media (max-width:800px) { .stats,.grid3 { grid-template-columns:repeat(2,1fr) } .concept { grid-template-columns:1fr } .repository-connect{align-items:stretch;flex-direction:column} .repository-connect .btn{width:100%} .service-grid{grid-template-columns:1fr} h1{font-size:34px} }
+  @media (max-width:800px) { .stats,.grid3 { grid-template-columns:repeat(2,1fr) } .concept { grid-template-columns:1fr } .repository-connect{align-items:stretch;flex-direction:column} .repository-buttons{align-items:stretch;flex-direction:column} .repository-connect .btn{width:100%} .service-grid{grid-template-columns:1fr} h1{font-size:34px} }
   @media (max-width:560px) { .shell{padding:0 15px}.stats,.grid,.grid3{grid-template-columns:1fr}.head{align-items:flex-start}.kicker{display:none} }
   @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; transition:none!important } }
 </style>
@@ -133,45 +138,19 @@
       <div><div class="brand">Data<span>Master</span></div><div class="kicker">Government integration control layer</div></div>
       <div class="head-actions">
         <a class="btn teal" href="/permit">Permit application</a>
-        <button class="btn danger" id="reset">Reset demo</button>
+        <button class="btn danger" id="reset">Reset service</button>
       </div>
     </div>
     <nav class="tabs" aria-label="DataMaster console">
-      <button class="tab on" data-tab="overview">Overview</button>
-      <button class="tab" data-tab="services">Services</button>
-      <button class="tab" data-tab="onboarding">Onboarding</button>
-      <button class="tab" data-tab="changes">Changes <span id="pendingBadge"></span></button>
+      <button class="tab on" data-tab="services">Services</button>
       <button class="tab" data-tab="playground">Playground</button>
-      <button class="tab" data-tab="tests">Tests</button>
+      <button class="tab" data-tab="role-permissions">Role & Permissions</button>
     </nav>
   </div>
 </header>
 
 <main class="shell">
-  <section id="overview" class="view">
-    <div class="card hero">
-      <div class="eyebrow">DataMaster</div>
-      <h1>Connect government records through one stable semantic layer.</h1>
-      <p class="lede">Discover constrained integrations for legacy services, reuse government-defined authoritative records, and maintain downstream stability when upstream APIs change. AI proposes; deterministic checks and humans decide.</p>
-      <div class="stats" id="stats"></div>
-      <div class="wraprow">
-        <a class="btn primary" href="/permit">Open logistics permit demo →</a>
-        <span class="badge" id="ossBadge">OSS version …</span>
-        <span class="badge" id="llmBadge">Semantic analyzer …</span>
-      </div>
-    </div>
-    <div class="grid">
-      <div class="card"><div class="eyebrow">Authoritative sources</div><div id="sourceList" class="list"></div></div>
-      <div class="card">
-        <div class="eyebrow">The distinction</div>
-        <h2>OpenAPI and DataMaster have different jobs.</h2>
-        <p class="muted">OpenAPI describes the contract of one HTTP API. DataMaster consumes contracts and maintains ecosystem state: ownership, canonical mappings, dependents, impact analysis, adapters, provenance, and approval history.</p>
-        <div class="notice">OpenAPI describes an API. DataMaster manages the dependency and integration lifecycle across many APIs.</div>
-      </div>
-    </div>
-  </section>
-
-  <section id="services" class="view hidden">
+  <section id="services" class="view">
     <div class="service-intro"><h2>Government services and their APIs</h2></div>
     <div class="repository-connect">
       <div class="repository-copy">
@@ -182,37 +161,17 @@
           <span class="repository-state" id="repositoryState">Checking the repository analyzer…</span>
         </div>
       </div>
-      <button class="btn primary" id="connectRepository">Connect GitHub repo</button>
+      <div class="repository-buttons">
+        <button class="btn primary" id="connectRepository">Connect GitHub repo</button>
+        <button class="btn teal" id="inspectRepositoriesNow">Check for changes</button>
+      </div>
     </div>
     <div id="serviceList" class="service-grid"></div>
   </section>
 
-  <section id="onboarding" class="view hidden">
-    <div class="eyebrow">Scene C · Legacy system onboarding</div>
-    <h2>Turn a useful internal function into a reviewable integration proposal.</h2>
-    <p class="lede">The fixture has deterministic land-allocation data and an internal Python repository function, but no public HTTP endpoint and no OpenAPI contract.</p>
-    <div class="card row">
-      <div><h3>Legacy BP Batam LMS fixture</h3><span class="badge bad">No public API</span> <span class="badge bad">No OpenAPI</span><p class="small muted" style="margin:8px 0 0">fixtures/legacy_lms/repository.py</p></div>
-      <button class="btn primary" id="scan">Scan codebase</button>
-    </div>
-    <div id="onboardingResult"></div>
-  </section>
-
-  <section id="changes" class="view hidden">
-    <div class="eyebrow">Scene D · Upstream contract change</div>
-    <h2>Detect impact, propose a semantic adapter update, then wait.</h2>
-    <p class="lede">The local button exercises the same internal pipeline as the signed GitHub webhook endpoint, so the live demo does not depend on internet access.</p>
-    <div class="card row">
-      <div><h3>OSS v1 → v2 merge</h3><p class="small muted" style="margin:0">Path and response field names change; the underlying government concepts do not.</p></div>
-      <button class="btn primary" id="simulate">Simulate upstream OSS merge</button>
-    </div>
-    <div id="changeResult"></div>
-  </section>
-
   <section id="playground" class="view hidden">
-    <div class="eyebrow">OpenAI tool routing</div>
     <h2>Inspect the flexible-query call trace.</h2>
-    <p class="lede">OpenAI maps flexible field names, selects the required government API tools, and returns the exact requested JSON fields. Every real tool call is shown below.</p>
+    <p class="lede">The AI Agent maps flexible field names, selects the required government API tools, and returns the exact requested JSON fields. Every real tool call is shown below.</p>
     <div class="grid card">
       <div><label for="qInput">Subject — flexible key names</label><textarea id="qInput" rows="4">{name: John Doe, no: +62838292938}</textarea></div>
       <div><label for="qFields">Requested output fields</label><textarea id="qFields" rows="4">{npwp, companyName, nib}</textarea></div>
@@ -221,11 +180,6 @@
     <div id="trace" class="card trace"><span class="muted small">Call events will appear here.</span></div>
   </section>
 
-  <section id="tests" class="view hidden">
-    <div class="row"><div><div class="eyebrow">Deterministic acceptance suite</div><h2>Verify the judge path without touching live demo state.</h2></div><button class="btn primary" id="runTests">Run 12 checks</button></div>
-    <p class="lede">The backend copies the initial registry into a temporary directory, exercises policy, resolution, onboarding, diffing, approval, and OSS v2, then removes the copy. No LLM or internet is required.</p>
-    <div id="testSummary"></div><div id="testList" class="list"></div>
-  </section>
 </main>
 
 <dialog id="repositoryDialog" aria-labelledby="repositoryDialogTitle">
@@ -253,7 +207,6 @@
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, character => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[character]));
 const json = value => esc(JSON.stringify(value, null, 2));
-let overviewState = null;
 
 async function api(url, options = {}) {
   const response = await fetch(url, options);
@@ -273,46 +226,50 @@ function toast(message, bad = false) {
   element.style.borderColor = bad ? "var(--red)" : "var(--green)";
   window.setTimeout(() => element.classList.add("hidden"), 3600);
 }
-function statusBadge(status) {
-  const kind = status === "applied" || status === "active" ? "ok" : status === "pending" ? "wait" : "bad";
-  return `<span class="badge ${kind}">${esc(status)}</span>`;
-}
-
 document.querySelectorAll(".tab").forEach(button => button.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(item => item.classList.toggle("on", item === button));
   document.querySelectorAll(".view").forEach(view => view.classList.toggle("hidden", view.id !== button.dataset.tab));
 }));
 
-async function loadOverview() {
-  const data = await api("/api/overview"); overviewState = data;
-  const labels = {services:"Services connected", concepts:"Canonical concepts", consumers:"Active consumers", pending_reviews:"Pending reviews"};
-  $("#stats").innerHTML = Object.entries(data.counts).map(([key,value]) => `<div class="stat"><strong>${value}</strong><span>${labels[key]}</span></div>`).join("");
-  $("#ossBadge").textContent = `OSS upstream v${data.demo.oss_version} · registry r${data.registry_revision}`;
-  $("#llmBadge").textContent = data.llm_available ? "OpenAI query routing enabled" : "OpenAI query routing needs setup";
-  $("#pendingBadge").textContent = data.pending_changes ? `· ${data.pending_changes}` : "";
-  $("#playgroundStatus").textContent = data.llm_available ? "OpenAI Responses API ready." : "Set OPENAI_API_KEY on the DataMaster server to run queries.";
-}
 async function loadServices() {
   const data = await api("/api/services");
-  const concepts = data.concepts;
   const generatedServices = Object.values(data.services).filter(service => service.documentation_status === "generated_from_repository");
   const analyzer = data.repository_connector;
   const connectedSummary = generatedServices.length
     ? `${generatedServices.length} repository service${generatedServices.length === 1 ? "" : "s"} connected`
     : "No repository service connected yet";
   $("#repositoryState").textContent = analyzer.openai_configured
-    ? `${connectedSummary} · OpenAI analyzer ready (${analyzer.model})`
+    ? connectedSummary
     : `${connectedSummary} · server setup required: OPENAI_API_KEY`;
-  const sourceRows = [
-    ["NIB","business.nib"],["NPWP","business.npwp"],["Company deed","business.company_deed"],["Director identity","person.nik"],["Land record","bpbatam.land_record"]
-  ];
-  $("#sourceList").innerHTML = sourceRows.map(([label,key]) => {
-    const item = concepts[key], service = data.services[item.authoritative_service];
-    return `<div class="row small"><span>${esc(label)}</span><span class="mono" style="color:var(--teal)">${esc(service.name)}</span></div>`;
-  }).join("");
+  $("#playgroundStatus").textContent = analyzer.openai_configured
+    ? "OpenAI Responses API ready."
+    : "Set OPENAI_API_KEY on the DataMaster server to run queries.";
+  renderRepositoryMonitor(data.repository_monitor || {
+    enabled: true,
+    checking: false,
+    interval_seconds: 20,
+    force_requested: false,
+    monitored_repository_count: generatedServices.length,
+    last_checked_at: null,
+    repositories: []
+  });
   $("#serviceList").innerHTML = Object.entries(data.services).filter(([,service]) => service.documentation_status !== "undocumented").map(([,service]) => {
     const apis = service.apis || [];
     const initials = service.name.split(/\s+/).map(word => word[0]).join("").slice(0, 3).toUpperCase();
+    const repositoryChange = service.last_documentation_change;
+    const addedOperations = repositoryChange?.added_operations || [];
+    const removedOperations = repositoryChange?.removed_operations || [];
+    const changedOperations = repositoryChange?.changed_operations || [];
+    const changedFiles = repositoryChange?.changed_files || [];
+    const repositoryDetails = service.source_repository ? `<div class="service-repository">
+      <strong>Repository source</strong>
+      <a href="${esc(service.source_repository)}" target="_blank" rel="noopener noreferrer">${esc(service.source_repository)}</a>
+      <div>Commit <code>${esc((service.repository_commit || "unknown").slice(0, 12))}</code> · last scanned ${esc(service.last_scanned || "unknown")}</div>
+      ${repositoryChange ? `<div class="repository-change"><strong>Documentation auto-updated</strong><br>
+        ${addedOperations.length} added · ${removedOperations.length} removed · ${changedOperations.length} revised operation${changedOperations.length === 1 ? "" : "s"}<br>
+        ${changedFiles.length ? `Changed source: ${esc(changedFiles.join(", "))}` : "The complete current snapshot was inspected."}
+      </div>` : ""}
+    </div>` : "";
     return `<article class="service-card">
       <div class="service-card__head">
         <div class="service-identity">
@@ -321,17 +278,55 @@ async function loadServices() {
         </div>
       </div>
       <div class="service-host"><span>Hostname</span><code>${esc(service.hostname || "Internal service")}</code></div>
+      ${repositoryDetails}
       <div class="api-section">
         <div class="api-section__head"><span>APIs</span><span class="api-count">${apis.length} operation${apis.length === 1 ? "" : "s"}</span></div>
         <div class="api-list">${apis.length ? apis.map(item => `<div class="api-item">
           <div class="api-signature"><span class="api-method">${esc(item.method)}</span><code class="api-endpoint">${esc(item.endpoint)}</code></div>
           <p class="api-description">${esc(item.description)}</p>
         </div>`).join("") : `<div class="api-item"><p class="api-description" style="margin:0">No API operations registered.</p></div>`}</div>
-        ${(service.dependents||[]).length ? `<div class="service-foot">Used by BP Batam IUK Logistik Demo</div>` : ""}
+        ${(service.dependents||[]).length ? `<div class="service-foot">Used by BP permit application</div>` : ""}
       </div>
     </article>`;
   }).join("");
 }
+
+function renderRepositoryMonitor(monitor) {
+  const button = $("#inspectRepositoriesNow");
+  button.disabled = monitor.checking || monitor.force_requested;
+  if (monitor.force_requested) {
+    button.textContent = "Check queued…";
+  } else if (monitor.checking) {
+    button.textContent = "Checking…";
+  } else {
+    button.textContent = "Check for changes";
+  }
+}
+
+$("#inspectRepositoriesNow").onclick = async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = "Queuing…";
+  try {
+    // `enabled` keeps this page compatible with a DataMaster process that was
+    // started before the monitor endpoint changed from a toggle to a manual check.
+    // The current endpoint ignores the legacy field and forces an inspection.
+    const monitor = await post("/api/repositories/monitor", {enabled: true});
+    renderRepositoryMonitor(monitor);
+    toast(
+      monitor.monitored_repository_count
+        ? "Complete repository inspection queued."
+        : "No connected repositories to inspect.",
+      !monitor.monitored_repository_count,
+    );
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "Check for changes";
+    toast(error.message, true);
+  } finally {
+    await loadServices().catch(error => toast(error.message, true));
+  }
+};
 
 $("#connectRepository").onclick = () => {
   $("#repositoryError").textContent = "";
@@ -348,7 +343,7 @@ $("#repositoryForm").onsubmit = async event => {
   button.textContent = "Inspecting repository…";
   try {
     const result = await post("/api/repositories/connect", {repository_url: repositoryUrl});
-    await Promise.all([loadOverview(), loadServices()]);
+    await loadServices();
     $("#repositoryDialog").close();
     $("#repositoryForm").reset();
     toast(`${result.service.name} added with ${result.evidence.length} documented API${result.evidence.length === 1 ? "" : "s"}.`);
@@ -360,49 +355,6 @@ $("#repositoryForm").onsubmit = async event => {
   }
 };
 
-function renderOnboarding(proposal) {
-  if (!proposal) { $("#onboardingResult").innerHTML = ""; return; }
-  const selected = proposal.scan.selected_operation;
-  const params = selected.parameters.map(item => `${item.name}: ${item.annotation || "unknown"}`).join(", ");
-  $("#onboardingResult").innerHTML = `<div class="card">
-    <div class="row"><div><div class="eyebrow">Integration proposal</div><h2>${esc(proposal.title)}</h2></div>${statusBadge(proposal.status)}</div>
-    <div class="grid3">
-      <div class="card soft"><h3>1 · AST discovery</h3><p class="small muted">Parser: ${esc(proposal.scan.parser)}<br>Selected: <code>${esc(selected.name)}(${esc(params)})</code><br>Return: <code>${esc(selected.return_annotation)}</code><br>Source line: ${selected.line}</p></div>
-      <div class="card soft"><h3>2 · Generated artifacts</h3><p class="small muted">Constrained adapter<br>OpenAPI 3.1 proposal<br>Docs derived from OpenAPI<br>Proposed registry entry</p></div>
-      <div class="card soft"><h3>3 · Safety gate</h3><p class="small muted">${esc(proposal.safety)}</p></div>
-    </div>
-    <div class="pipeline">${proposal.checks.map(item => `<div class="pipe"><i></i><span>${esc(item.name)}</span><span class="badge ok">passed</span></div>`).join("")}<div class="pipe ${proposal.status === "pending" ? "wait" : ""}"><i></i><span>Human approval</span><span class="badge ${proposal.status === "pending" ? "wait" : "ok"}">${proposal.status === "pending" ? "waiting" : "approved"}</span></div></div>
-    <details><summary>Review generated adapter</summary><pre>${json(proposal.adapter)}</pre></details>
-    <details><summary>Review generated OpenAPI</summary><pre>${json(proposal.openapi)}</pre></details>
-    <details><summary>Review docs derived from OpenAPI</summary><pre>${esc(proposal.docs_preview)}</pre></details>
-    ${proposal.status === "pending" ? `<div class="row" style="margin-top:16px"><span class="small muted">Nothing is active until this approval.</span><button class="btn primary" onclick="approveOnboarding('${esc(proposal.id)}')">Approve integration</button></div>` : `<div class="notice" style="margin-top:14px">✓ Adapter tests passed · registry activated · generated files persisted<br>${(proposal.generated_files||[]).map(esc).join(" · ")}</div>`}
-  </div>`;
-}
-async function loadOnboarding() { const data = await api("/api/onboarding"); renderOnboarding(data.proposals.at(-1)); }
-$("#scan").onclick = async () => { const button=$("#scan"); button.disabled=true; button.textContent="Scanning…"; try{renderOnboarding(await post("/api/onboarding/scan"));await loadOverview();toast("Real AST scan completed; proposal is waiting for review.");}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Scan codebase"} };
-window.approveOnboarding = async id => { try{renderOnboarding(await post(`/api/onboarding/${encodeURIComponent(id)}/approve`));await Promise.all([loadOverview(),loadServices()]);toast("Integration approved after deterministic checks.");}catch(error){toast(error.message,true)} };
-
-function renderChange(proposal) {
-  if (!proposal) { $("#changeResult").innerHTML = ""; return; }
-  const diff = proposal.diff;
-  const removed = [...diff.removed_paths.map(item => `${item.method} ${item.path}`), ...diff.removed_response_fields.map(item => `response.${item}`)];
-  const added = [...diff.added_paths.map(item => `${item.method} ${item.path}`), ...diff.added_response_fields.map(item => `response.${item}`)];
-  $("#changeResult").innerHTML = `<div class="card">
-    <div class="row"><div><div class="eyebrow">Commit ${esc(proposal.commit)}</div><h2>${esc(proposal.title)}</h2><span class="badge">${esc(proposal.source)}</span> <span class="badge">${esc(proposal.analysis.mode)}</span></div>${statusBadge(proposal.status)}</div>
-    <div class="grid" style="margin-top:15px"><div class="card soft"><h3 class="minus">Breaking changes</h3><div class="diff">${removed.map(item => `<div class="minus">− ${esc(item)}</div>`).join("")}</div></div><div class="card soft"><h3 class="plus">New contract</h3><div class="diff">${added.map(item => `<div class="plus">+ ${esc(item)}</div>`).join("")}</div></div></div>
-    <div class="grid"><div class="card soft"><h3>Affected DataMaster concepts</h3>${proposal.affected_concepts.map(item => `<div><code>${esc(item)}</code></div>`).join("")}</div><div class="card soft"><h3>Affected consumers</h3>${proposal.affected_consumers.map(item => `<div>${esc(item.name)}</div>`).join("")}</div></div>
-    <h3 style="margin-top:16px">Proposed semantic mappings</h3>
-    <div class="list">${proposal.mappings.map(item => `<div class="card soft row"><div><code>${esc(item.concept)}</code><div class="small muted"><span class="minus">${esc(item.old_field)}</span> → <span class="plus">${esc(item.new_field)}</span> · ${item.confidence == null ? "reviewer edited" : Math.round(item.confidence*100)+"% confidence"}</div><div class="small muted">${esc(item.reason)}</div></div>${proposal.status === "pending" ? `<button class="btn" onclick="editMapping('${esc(proposal.id)}','${esc(item.concept)}','${esc(item.new_field)}')">Edit mapping</button>` : ""}</div>`).join("")}</div>
-    <div class="pipeline">${proposal.pipeline.map(item => `<div class="pipe ${item.status === "waiting" ? "wait" : ""}"><i></i><span>${esc(item.name)}</span><span class="badge ${item.status === "waiting" ? "wait" : "ok"}">${esc(item.status)}</span><span class="muted">${esc(item.actor)}</span></div>`).join("")}</div>
-    ${proposal.tests ? `<div class="notice">${proposal.tests.map(item => `${item.passed ? "✓" : "✕"} ${esc(item.name)}`).join("<br>")}<br>✓ DataMaster stable contract unchanged · registry revision ${proposal.registry_revision}</div>` : ""}
-    ${proposal.status === "pending" ? `<div class="row" style="margin-top:16px"><button class="btn danger" onclick="rejectChange('${esc(proposal.id)}')">Reject</button><div class="wraprow"><a class="btn" href="/permit">Observe degraded permit</a><button class="btn primary" onclick="approveChange('${esc(proposal.id)}')">Approve &amp; test</button></div></div>` : proposal.status === "applied" ? `<div class="row" style="margin-top:16px"><span class="small muted">The permit client still requests <code>business.nib</code>.</span><a class="btn primary" href="/permit">Prove permit still works →</a></div>` : ""}
-  </div>`;
-}
-async function loadChanges() { const data=await api("/api/changes"); renderChange(data.changes.at(-1)); }
-$("#simulate").onclick = async () => { const button=$("#simulate");button.disabled=true;button.textContent="Diffing…";try{renderChange(await post("/api/changes/simulate-oss-v2"));await loadOverview();toast("OSS v2 detected. Registry is still on the last approved mapping.");}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Simulate upstream OSS merge"} };
-window.editMapping = async (id,concept,current) => { const next=window.prompt(`New upstream field for ${concept}`,current); if(!next||next===current)return; try{const proposal=await api(`/api/changes/${encodeURIComponent(id)}/mapping`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({concept,new_field:next})});renderChange(proposal);toast("Mapping edited; it is still pending.");}catch(error){toast(error.message,true)} };
-window.approveChange = async id => { try{renderChange(await post(`/api/changes/${encodeURIComponent(id)}/approve`));await Promise.all([loadOverview(),loadServices()]);toast("Contract tests passed; OSS v2 adapter is active.");}catch(error){await loadChanges();toast(error.message,true)} };
-window.rejectChange = async id => { try{renderChange(await post(`/api/changes/${encodeURIComponent(id)}/reject`));await loadOverview();toast("Proposal rejected; no registry mapping changed.");}catch(error){toast(error.message,true)} };
 
 let events = [];
 function renderTrace() { $("#trace").innerHTML = events.map(event => {
@@ -414,15 +366,18 @@ function renderTrace() { $("#trace").innerHTML = events.map(event => {
   }).join("") || '<span class="muted small">Call events will appear here.</span>'; }
 $("#runQuery").onclick = () => { const button=$("#runQuery");events=[];renderTrace();button.disabled=true;button.textContent="Routing…";const source=new EventSource(`/api/query/stream?input=${encodeURIComponent($("#qInput").value)}&fields=${encodeURIComponent($("#qFields").value)}`);source.onmessage=message=>{events.push(JSON.parse(message.data));renderTrace()};source.addEventListener("done",()=>{source.close();button.disabled=false;button.textContent="Run query"});source.onerror=()=>{source.close();button.disabled=false;button.textContent="Run query"}; };
 
-$("#runTests").onclick = async () => { const button=$("#runTests");button.disabled=true;button.textContent="Checking…";try{const data=await post("/api/demo/tests");$("#testSummary").innerHTML=`<div class="notice" style="margin-bottom:12px">${data.passed}/${data.total} passed · isolated temporary state · no LLM required</div>`;$("#testList").innerHTML=data.results.map(item=>`<div class="card check"><div class="checkmark">${item.passed ? "✓" : "✕"}</div><div><h3>${esc(item.name)}</h3><div class="small muted">${esc(item.evidence)}</div></div></div>`).join("");toast(`${data.passed}/${data.total} deterministic checks passed.`,data.passed!==data.total);}catch(error){toast(error.message,true)}finally{button.disabled=false;button.textContent="Run 12 checks"} };
-
-$("#reset").onclick = async () => { if(!window.confirm("Restore OSS v1, registry revision 1, and clear all proposals?")) return; try{await post("/api/demo/reset",{actor:"console_reviewer"});await Promise.all([loadOverview(),loadServices(),loadOnboarding(),loadChanges()]);$("#testSummary").innerHTML="";$("#testList").innerHTML="";toast("Demo restored to the known initial state.");}catch(error){toast(error.message,true)} };
+$("#reset").onclick = async () => { if(!window.confirm("Restore OSS v1, registry revision 1, and clear all proposals?")) return; try{await post("/api/demo/reset",{actor:"console_reviewer"});await loadServices();toast("Demo restored to the known initial state.");}catch(error){toast(error.message,true)} };
 
 const requestedTab = new URLSearchParams(window.location.search).get("tab");
-const allowedTabs = ["overview","services","onboarding","changes","playground","tests"];
+const allowedTabs = ["services","playground"];
 const requestedButton = allowedTabs.includes(requestedTab) && document.querySelector(`.tab[data-tab="${requestedTab}"]`);
 if (requestedButton) requestedButton.click();
-Promise.all([loadOverview(),loadServices(),loadOnboarding(),loadChanges()]).catch(error => toast(error.message,true));
+loadServices().catch(error => toast(error.message,true));
+window.setInterval(() => {
+  if (!document.hidden) {
+    loadServices().catch(error => toast(error.message, true));
+  }
+}, 5000);
 </script>
 </body>
 </html>

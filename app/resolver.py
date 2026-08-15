@@ -135,7 +135,10 @@ def resolve(
     called_services.append("dukcapil")
     nik = _extract(bodies["dukcapil"], dukcapil["response_path"])
 
-    needs_oss = any(field in fields for field in ("business.nib", "business.company_name", "bpbatam.land_record"))
+    required_services = {
+        concepts[field]["authoritative_service"] for field in automatic_fields
+    }
+    needs_oss = "oss" in required_services or "bpbatam" in required_services
     if needs_oss:
         oss = concepts["business.nib"]
         bodies["oss"] = _service_call(
@@ -148,21 +151,21 @@ def resolve(
         )
         called_services.append("oss")
 
-    if "business.npwp" in fields:
+    if "djp" in required_services:
         djp = concepts["business.npwp"]
         bodies["djp"] = _service_call(
             "djp", djp["operation"], djp["endpoint"], {"nik": nik}, trace, requester
         )
         called_services.append("djp")
 
-    if "business.company_deed" in fields:
+    if "ahu" in required_services:
         ahu = concepts["business.company_deed"]
         bodies["ahu"] = _service_call(
             "ahu", ahu["operation"], ahu["endpoint"], {"nik": nik}, trace, requester
         )
         called_services.append("ahu")
 
-    if "bpbatam.land_record" in fields:
+    if "bpbatam" in required_services:
         nib_config = concepts["business.nib"]
         nib = _extract(bodies["oss"], nib_config["response_path"])
         bpbatam = concepts["bpbatam.land_record"]

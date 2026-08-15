@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from app.demo_resident_records import list_demo_resident_records
 from app.state_store import STORE, StateStore
 
 app = FastAPI(title="Mock Government APIs")
@@ -19,6 +20,7 @@ CITIZENS = [
         "nik": "2171012507890001",
         "dob": "1989-07-25",
         "registered_address": "Jl. Engku Putri No. 12, Batam Center",
+        "email": "john.doe@selatniaga.co.id",
         "npwp": "09.254.294.3-217.000",
         "npwp_last_verified": "2026-03-14",
         "blood_type": "O+",
@@ -49,6 +51,7 @@ CITIZENS = [
         "nik": "2171045508920002",
         "dob": "1992-08-15",
         "registered_address": "Perum Tiban Indah Blok F2 No. 8, Sekupang",
+        "email": "siti.rahma@rahmaboga.co.id",
         "npwp": "81.442.108.9-217.000",
         "npwp_last_verified": "2025-11-30",
         "blood_type": "B-",
@@ -72,6 +75,7 @@ CITIZENS = [
         "nik": "2171010101850003",
         "dob": "1985-01-01",
         "registered_address": "Jl. Duyung No. 3, Batu Ampar",
+        "email": "budi.santoso@example.co.id",
         "npwp": None,
         "npwp_last_verified": None,
         "blood_type": "A+",
@@ -96,14 +100,24 @@ def _digits(value: str | None) -> str:
     return "".join(character for character in (value or "") if character.isdigit())
 
 
-def _by_nik(nik: str) -> dict[str, Any] | None:
+def _citizens(store: StateStore) -> list[dict[str, Any]]:
+    return [*list_demo_resident_records(store=store), *CITIZENS]
+
+
+def _by_nik(nik: str, store: StateStore) -> dict[str, Any] | None:
     normalized = _digits(nik)
-    return next((citizen for citizen in CITIZENS if citizen["nik"] == normalized), None)
+    return next(
+        (citizen for citizen in _citizens(store) if citizen["nik"] == normalized),
+        None,
+    )
 
 
-def _by_nib(nib: str) -> dict[str, Any] | None:
+def _by_nib(nib: str, store: StateStore) -> dict[str, Any] | None:
     normalized = _digits(nib)
-    return next((citizen for citizen in CITIZENS if citizen["nib"] == normalized), None)
+    return next(
+        (citizen for citizen in _citizens(store) if citizen.get("nib") == normalized),
+        None,
+    )
 
 
 def government_response(
@@ -115,7 +129,14 @@ def government_response(
     """Pure dispatcher shared by HTTP routes and deterministic integration tests."""
     if path == "/dukcapil/getNIK":
         query = str(params.get("name", "")).strip().lower()
-        citizen = next((item for item in CITIZENS if query in item["name"] or item["name"] in query), None)
+        citizen = next(
+            (
+                item
+                for item in _citizens(store)
+                if query in item["name"] or item["name"] in query
+            ),
+            None,
+        )
         if not citizen:
             return 404, {"error": "No citizen matches that name"}
         if not _digits(str(params.get("phone", ""))).endswith(_digits(citizen["phone"])[-8:]):
@@ -124,16 +145,17 @@ def government_response(
             "nik": citizen["nik"],
             "registered_address": citizen["registered_address"],
             "dob": citizen["dob"],
+            "email": citizen.get("email"),
         }
 
     if path == "/djp/getNPWP":
-        citizen = _by_nik(str(params.get("nik", "")))
+        citizen = _by_nik(str(params.get("nik", "")), store)
         if not citizen:
             return 404, {"error": "NIK not found"}
         return 200, {"npwp": citizen["npwp"], "last_verified": citizen["npwp_last_verified"]}
 
     if path == "/satusehat/getRecord":
-        citizen = _by_nik(str(params.get("nik", "")))
+        citizen = _by_nik(str(params.get("nik", "")), store)
         if not citizen:
             return 404, {"error": "NIK not found in SATUSEHAT index"}
         return 200, {
@@ -148,7 +170,7 @@ def government_response(
             return 410, {"error": "OSS v1 operation was removed in demo-oss-v2"}
         if path == "/oss/business-by-director" and version != 2:
             return 404, {"error": "OSS v2 operation is not active"}
-        citizen = _by_nik(str(params.get("nik", "")))
+        citizen = _by_nik(str(params.get("nik", "")), store)
         if not citizen:
             return 404, {"error": "NIK not found"}
         if version == 1:
@@ -166,7 +188,7 @@ def government_response(
         }
 
     if path == "/bpbatam/getMasterlist":
-        citizen = _by_nib(str(params.get("nib", "")))
+        citizen = _by_nib(str(params.get("nib", "")), store)
         if not citizen:
             return 404, {"error": "NIB not registered with BP Batam"}
         return 200, {
@@ -178,7 +200,7 @@ def government_response(
         }
 
     if path == "/ahu/getDeed":
-        citizen = _by_nik(str(params.get("nik", "")))
+        citizen = _by_nik(str(params.get("nik", "")), store)
         if not citizen:
             return 404, {"error": "NIK not found"}
         return 200, {

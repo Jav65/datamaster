@@ -43,3 +43,4 @@ class PermitValidationResult(BaseModel):
     eligible: bool
     checks: list[str]
     reason: str
+
