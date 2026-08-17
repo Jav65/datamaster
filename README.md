@@ -1,5 +1,11 @@
 # DataMaster
 
+## 🚀 Quick Links
+* **Batam Singapore Hackathon 2026:** [LinkedIn Post](https://www.linkedin.com/posts/batam-innovation-center_winners-announcement-for-hackathon-rising-activity-7495125305234305025-yhUr)
+* **Product Demonstration:** [YouTube Video Demo](https://youtu.be/NAUMH0jjMEk)
+* **Presentation Slides:** [Google Slides Pitch Deck](https://docs.google.com/presentation/d/1XZIQMvin1kSpVvLUVq1FC_ckJuXYatya/edit?usp=sharing&ouid=106817690326624613910)
+
+
 **An AI-assisted government integration control layer for Batam.**
 
 DataMaster gives downstream government services one stable, canonical API while
