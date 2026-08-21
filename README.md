@@ -32,7 +32,8 @@ treating any part of the system as production-ready.
 Batam residents and businesses interact with municipal and national agencies
 whose services are digitized but still separated. A permit applicant may need
 to repeat identity, tax, incorporation, licensing, and BP Batam information
-that another authoritative agency has already verified.
+that another authoritative agency has already verified. This causes unnecesary
+delays in government processing.
 
 DataMaster explores a reusable integration layer for that problem:
 
